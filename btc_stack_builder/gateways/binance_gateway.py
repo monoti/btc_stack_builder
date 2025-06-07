@@ -1160,7 +1160,7 @@ class BinanceGateway(ExchangeGateway):
         except Exception as e:
             logger.error(f"Error fetching funding history for {symbol}", exc_info=True)
             await self._handle_ccxt_error(e)
-
+        return []
     async def get_open_orders(self, symbol: str | None = None) -> list[Order]:
         """
         Get all open orders, optionally filtered by symbol.
