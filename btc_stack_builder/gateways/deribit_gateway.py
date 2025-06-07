@@ -511,6 +511,16 @@ class DeribitGateway(ExchangeGateway):
         except Exception as e:
             logger.error(f"Error fetching ticker for {symbol}", exc_info=True)
             await self._handle_ccxt_error(e)
+            return {
+                "symbol": symbol,
+                "last": None,
+                "bid": None,
+                "ask": None,
+                "high": None,
+                "low": None,
+                "volume": None,
+                "timestamp": None,
+            }
 
     async def get_orderbook(self, symbol: str, limit: int = 20) -> dict[str, Any]:
         """
