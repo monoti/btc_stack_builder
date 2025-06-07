@@ -609,7 +609,7 @@ class BinanceGateway(ExchangeGateway):
         except Exception as e:
             logger.error(f"Error fetching orderbook for {symbol}", exc_info=True)
             await self._handle_ccxt_error(e)
-
+            return {}  # Explicitly return an empty dictionary in case of an error
     async def get_balance(self) -> dict[str, dict[str, Decimal]]:
         """
         Get account balances for all assets.
