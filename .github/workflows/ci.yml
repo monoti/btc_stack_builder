@@ -22,7 +22,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  PYTHON_VERSION: '3.12'
+  PYTHON_VERSION: '3.13'
   POSTGRES_VERSION: '15-alpine'
   REDIS_VERSION: '7-alpine'
 
