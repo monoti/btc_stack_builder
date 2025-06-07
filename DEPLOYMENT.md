@@ -11,7 +11,7 @@ _“Build it safe, ship it secure, watch it grow.”_
 | CPU  | 2 vCPU  | 4 vCPU (Intel AES-NI / AMD-SEV preferred) |
 | RAM  | 4 GiB   | 8 GiB+ |
 | Disk | 40 GB SSD | 80 GB NVMe |
-| Public IP | static / elastic | behind Cloud-flare → Proxied |
+| Public IP | static / elastic | behind Cloudflare → Proxied |
 | Docker | ≥ 24.0 | Latest stable |
 | Docker Compose | v2 plugin | Latest stable |
 | Domain names | `prometheus.example.com`, `grafana.example.com`, etc. | Same + valid TLS certs (Let’s Encrypt or CA) |
