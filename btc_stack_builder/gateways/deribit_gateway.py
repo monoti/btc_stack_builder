@@ -546,6 +546,7 @@ class DeribitGateway(ExchangeGateway):
         except Exception as e:
             logger.error(f"Error fetching orderbook for {symbol}", exc_info=True)
             await self._handle_ccxt_error(e)
+            return {"symbol": symbol, "bids": [], "asks": [], "timestamp": None}
 
     async def get_balance(self) -> dict[str, dict[str, Decimal]]:
         """
