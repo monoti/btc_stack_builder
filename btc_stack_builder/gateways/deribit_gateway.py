@@ -634,7 +634,7 @@ class DeribitGateway(ExchangeGateway):
         except Exception as e:
             logger.error("Error fetching positions", exc_info=True)
             await self._handle_ccxt_error(e)
-
+            return []
     async def get_margin_status(self) -> MarginStatus:
         """
         Get current margin status.
