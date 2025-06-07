@@ -1005,6 +1005,7 @@ class DeribitGateway(ExchangeGateway):
         except Exception as e:
             logger.error(f"Error fetching option market data for {symbol}", exc_info=True)
             await self._handle_ccxt_error(e)
+            return {}
 
     async def get_option_settlement_history(
         self, start_timestamp: int | None = None, end_timestamp: int | None = None, limit: int = 20
