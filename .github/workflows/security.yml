@@ -58,7 +58,10 @@ jobs:
           pip install -r requirements.txt
       
       - name: Scan dependencies with Safety
-        run: safety check -r requirements.txt --sarif -o safety-results.sarif || true
+        run: |
+          cd $GITHUB_WORKSPACE
+          safety check -r requirements.txt --sarif -o safety-results.sarif || true
+          ls -la
       
       - name: Upload Safety results
         uses: github/codeql-action/upload-sarif@v3
