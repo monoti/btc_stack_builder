@@ -1,0 +1,171 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: btc-stack-builder-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-btcstack}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-btc_stack_builder}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-btcstack} -d ${POSTGRES_DB:-btc_stack_builder}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - btc-stack-network
+
+  # Redis for Caching and Message Broker
+  redis:
+    image: redis:7-alpine
+    container_name: btc-stack-builder-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-changeme}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - btc-stack-network
+
+  # Prometheus for Metrics Collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: btc-stack-builder-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - btc-stack-network
+
+  # Grafana for Dashboards and Visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: btc-stack-builder-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-changeme}
+      GF_INSTALL_PLUGINS: "grafana-clock-panel,grafana-simple-json-datasource"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning
+      - ./infra/grafana/dashboards:/var/lib/grafana/dashboards
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - btc-stack-network
+
+  # Alertmanager for Prometheus Alerts
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: btc-stack-builder-alertmanager
+    restart: unless-stopped
+    volumes:
+      - ./infra/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    ports:
+      - "9093:9093"
+    networks:
+      - btc-stack-network
+
+  # BTC Stack-Builder Bot
+  btc-stack-builder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: btc-stack-builder:latest
+    container_name: btc-stack-builder
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      BTC_STACK_BUILDER_ENVIRONMENT: ${ENVIRONMENT:-development}
+      BTC_STACK_BUILDER_CONFIG_DIR: /app/config
+      BTC_STACK_BUILDER_LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      BTC_STACK_BUILDER_DRY_RUN: ${DRY_RUN:-true}
+      BTC_STACK_BUILDER_DATABASE__HOST: postgres
+      BTC_STACK_BUILDER_DATABASE__PORT: 5432
+      BTC_STACK_BUILDER_DATABASE__USERNAME: ${POSTGRES_USER:-btcstack}
+      BTC_STACK_BUILDER_DATABASE__PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      BTC_STACK_BUILDER_DATABASE__DATABASE: ${POSTGRES_DB:-btc_stack_builder}
+      BTC_STACK_BUILDER_REDIS__HOST: redis
+      BTC_STACK_BUILDER_REDIS__PORT: 6379
+      BTC_STACK_BUILDER_REDIS__PASSWORD: ${REDIS_PASSWORD:-changeme}
+    volumes:
+      - ./config:/app/config:ro
+      - ./logs:/app/logs
+      - ./data:/app/data
+    ports:
+      - "8000:8000"  # Prometheus metrics endpoint
+    command: ["--metrics-port", "8000"]
+    networks:
+      - btc-stack-network
+
+  # Flower for Celery Task Monitoring
+  flower:
+    image: mher/flower:latest
+    container_name: btc-stack-builder-flower
+    restart: unless-stopped
+    environment:
+      FLOWER_BROKER: redis://:${REDIS_PASSWORD:-changeme}@redis:6379/0
+      FLOWER_PORT: 5555
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+      - btc-stack-builder
+    networks:
+      - btc-stack-network
+
+networks:
+  btc-stack-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+  alertmanager_data:

@@ -1,0 +1,96 @@
+# BTC Stack-Builder Bot Configuration
+# Main application configuration file
+
+# Application settings
+app_name: "BTC Stack-Builder Bot"
+environment: "development"  # Options: development, testnet, production
+debug: true
+log_level: "INFO"  # Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
+dry_run: true  # If true, don't execute actual trades
+
+# Portfolio configuration
+portfolio:
+  core_hodl_allocation: 0.60  # 60%
+  basis_harvest_allocation: 0.25  # 25%
+  funding_capture_allocation: 0.10  # 10%
+  option_premium_allocation: 0.05  # 5%
+  cold_wallet_address: "bc1qtest000000000000000000000000000000000000"  # Replace with actual cold wallet address
+
+# Exchange configurations
+binance:
+  enabled: true
+  credentials:
+    api_key: "your_binance_api_key_here"
+    api_secret: "your_binance_api_secret_here"
+    is_testnet: true
+  use_testnet: true  # Use Binance testnet for development
+  base_url: null  # Use default URL
+  futures_base_url: null  # Use default URL
+  rate_limit_requests: 1200  # requests per minute
+  rate_limit_orders: 10  # orders per second
+
+deribit:
+  enabled: true
+  credentials:
+    api_key: "your_deribit_api_key_here"
+    api_secret: "your_deribit_api_secret_here"
+    is_testnet: true
+  use_testnet: true  # Use Deribit testnet for development
+  base_url: null  # Use default URL
+  rate_limit_requests: 300  # requests per minute
+  rate_limit_orders: 5  # orders per second
+
+# Strategy configurations
+basis_harvest:
+  enabled: true
+  entry_threshold: 0.05  # 5% annualized basis
+  max_leverage: 1.5
+  roll_start_days: 21
+  roll_end_days: 14
+
+funding_capture:
+  enabled: true
+  entry_threshold: -0.0001  # -0.01% funding rate
+  max_leverage: 2.0
+  profit_target: 0.12  # 12% profit target
+
+option_premium:
+  enabled: true
+  delta_target: 0.20
+  min_expiry_days: 60
+  max_expiry_days: 90
+
+# Risk configuration
+risk:
+  global_stop_loss_threshold: -0.70  # 70% price movement
+  margin_ratio_warning_threshold: 4.50  # 450%
+  margin_ratio_critical_threshold: 4.00  # 400%
+  max_position_size_btc: 1.0  # Maximum position size in BTC
+  max_position_size_percentage: 0.25  # 25% of portfolio
+  max_leverage: 3.0
+  max_drawdown: 0.20  # 20% drawdown
+
+# Database configuration
+database:
+  host: "localhost"
+  port: 5432
+  username: "btcstack"
+  password: "changeme"
+  database: "btc_stack_builder"
+  pool_size: 5
+  max_overflow: 10
+  ssl_mode: null
+
+# Redis configuration
+redis:
+  host: "localhost"
+  port: 6379
+  db: 0
+  password: "changeme"
+  ssl: false
+
+# Telegram alerts configuration
+telegram_alerts:
+  enabled: false
+  bot_token: null
+  chat_id: null

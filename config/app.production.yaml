@@ -1,0 +1,64 @@
+# BTC Stack-Builder Bot Configuration
+# Production environment configuration file
+# This file overrides settings from app.yaml for production deployment
+
+# Application settings
+environment: "production"
+debug: false
+log_level: "INFO"
+dry_run: false  # Execute actual trades in production
+
+# Portfolio configuration
+portfolio:
+  # Keep the same allocation percentages as development
+  cold_wallet_address: "bc1qyour_secure_cold_wallet_address_here"  # IMPORTANT: Replace with actual production cold wallet address
+
+# Exchange configurations
+binance:
+  enabled: true
+  credentials:
+    api_key: "your_production_binance_api_key_here"  # IMPORTANT: Replace with actual production API key
+    api_secret: "your_production_binance_api_secret_here"  # IMPORTANT: Replace with actual production API secret
+    is_testnet: false
+  use_testnet: false  # Use real Binance exchange in production
+  # Production rate limits (same as default)
+  rate_limit_requests: 1200
+  rate_limit_orders: 10
+
+deribit:
+  enabled: true
+  credentials:
+    api_key: "your_production_deribit_api_key_here"  # IMPORTANT: Replace with actual production API key
+    api_secret: "your_production_deribit_api_secret_here"  # IMPORTANT: Replace with actual production API secret
+    is_testnet: false
+  use_testnet: false  # Use real Deribit exchange in production
+  # Production rate limits (same as default)
+  rate_limit_requests: 300
+  rate_limit_orders: 5
+
+# Risk configuration - slightly more conservative for production
+risk:
+  margin_ratio_warning_threshold: 5.00  # 500% - more conservative than development
+  margin_ratio_critical_threshold: 4.50  # 450% - more conservative than development
+  max_position_size_btc: 0.5  # Smaller position size for initial production deployment
+
+# Database configuration
+database:
+  host: "postgres"  # Use service name in Docker Compose
+  port: 5432
+  username: "btcstack_prod"
+  password: "strong_production_password_here"  # IMPORTANT: Replace with secure password
+  ssl_mode: "require"  # Enable SSL for production database connections
+
+# Redis configuration
+redis:
+  host: "redis"  # Use service name in Docker Compose
+  port: 6379
+  password: "strong_redis_password_here"  # IMPORTANT: Replace with secure password
+  ssl: true  # Enable SSL for production Redis connections
+
+# Enable Telegram alerts in production
+telegram_alerts:
+  enabled: true
+  bot_token: "your_telegram_bot_token_here"  # IMPORTANT: Replace with actual bot token
+  chat_id: "your_telegram_chat_id_here"  # IMPORTANT: Replace with actual chat ID
