@@ -1,0 +1,332 @@
+version: '3.8'
+
+# Production override for BTC Stack-Builder Bot
+# This file extends the base docker-compose.yml with production-specific settings
+
+services:
+  # PostgreSQL Database - Production Configuration
+  postgres:
+    restart: always
+    command: >
+      postgres
+      -c ssl=on
+      -c ssl_cert_file=/etc/ssl/certs/postgres.crt
+      -c ssl_key_file=/etc/ssl/private/postgres.key
+      -c ssl_ca_file=/etc/ssl/certs/ca.crt
+      -c work_mem=16MB
+      -c maintenance_work_mem=512MB
+      -c max_connections=100
+      -c shared_buffers=2GB
+      -c effective_cache_size=6GB
+      -c max_wal_size=2GB
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/ssl/postgres:/etc/ssl:ro
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    secrets:
+      - postgres_password
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  # Redis for Caching and Message Broker - Production Configuration
+  redis:
+    restart: always
+    command: >
+      redis-server 
+      --appendonly yes 
+      --requirepass ${REDIS_PASSWORD} 
+      --tls-port 6379
+      --port 0
+      --tls-cert-file /etc/ssl/certs/redis.crt
+      --tls-key-file /etc/ssl/private/redis.key
+      --tls-ca-cert-file /etc/ssl/certs/ca.crt
+    volumes:
+      - redis_data:/data
+      - ./infra/ssl/redis:/etc/ssl:ro
+    environment:
+      REDIS_PASSWORD_FILE: /run/secrets/redis_password
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.2'
+          memory: 512M
+    secrets:
+      - redis_password
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  # Prometheus for Metrics Collection - Production Configuration
+  prometheus:
+    restart: always
+    user: "nobody:nogroup"
+    volumes:
+      - ./infra/prometheus/prometheus.prod.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+      - ./infra/ssl/prometheus:/etc/ssl:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=90d'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--web.external-url=https://prometheus.btcstack.example.com'
+      - '--web.enable-admin-api=false'
+      - '--web.tls-cert-file=/etc/ssl/certs/prometheus.crt'
+      - '--web.tls-key-file=/etc/ssl/private/prometheus.key'
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.2'
+          memory: 512M
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  # Grafana for Dashboards and Visualization - Production Configuration
+  grafana:
+    restart: always
+    user: "472:472"  # Grafana's default user
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD_FILE: /run/secrets/grafana_admin_password
+      GF_SERVER_PROTOCOL: https
+      GF_SERVER_CERT_FILE: /etc/ssl/certs/grafana.crt
+      GF_SERVER_CERT_KEY: /etc/ssl/private/grafana.key
+      GF_AUTH_BASIC_ENABLED: "false"
+      GF_AUTH_DISABLE_LOGIN_FORM: "false"
+      GF_SECURITY_ALLOW_EMBEDDING: "false"
+      GF_SECURITY_COOKIE_SECURE: "true"
+      GF_SECURITY_STRICT_TRANSPORT_SECURITY: "true"
+      GF_SECURITY_STRICT_TRANSPORT_SECURITY_MAX_AGE_SECONDS: "31536000"
+      GF_SECURITY_CONTENT_SECURITY_POLICY: "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;"
+      GF_INSTALL_PLUGINS: "grafana-clock-panel,grafana-simple-json-datasource,grafana-piechart-panel"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./infra/ssl/grafana:/etc/ssl:ro
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.2'
+          memory: 256M
+    secrets:
+      - grafana_admin_password
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  # Alertmanager for Prometheus Alerts - Production Configuration
+  alertmanager:
+    restart: always
+    user: "nobody:nogroup"
+    volumes:
+      - ./infra/alertmanager/alertmanager.prod.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+      - ./infra/ssl/alertmanager:/etc/ssl:ro
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=https://alerts.btcstack.example.com'
+      - '--web.route-prefix=/'
+      - '--cluster.listen-address=0.0.0.0:9094'
+      - '--web.tls-cert-file=/etc/ssl/certs/alertmanager.crt'
+      - '--web.tls-key-file=/etc/ssl/private/alertmanager.key'
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  # BTC Stack-Builder Bot - Production Configuration
+  btc-stack-builder:
+    restart: always
+    user: "botuser:botuser"
+    environment:
+      BTC_STACK_BUILDER_ENVIRONMENT: "production"
+      BTC_STACK_BUILDER_CONFIG_DIR: /app/config
+      BTC_STACK_BUILDER_LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      BTC_STACK_BUILDER_DRY_RUN: "false"
+      BTC_STACK_BUILDER_DATABASE__HOST: postgres
+      BTC_STACK_BUILDER_DATABASE__PORT: 5432
+      BTC_STACK_BUILDER_DATABASE__USERNAME: ${POSTGRES_USER:-btcstack}
+      BTC_STACK_BUILDER_DATABASE__PASSWORD_FILE: /run/secrets/postgres_password
+      BTC_STACK_BUILDER_DATABASE__DATABASE: ${POSTGRES_DB:-btc_stack_builder}
+      BTC_STACK_BUILDER_DATABASE__SSL_MODE: "require"
+      BTC_STACK_BUILDER_REDIS__HOST: redis
+      BTC_STACK_BUILDER_REDIS__PORT: 6379
+      BTC_STACK_BUILDER_REDIS__PASSWORD_FILE: /run/secrets/redis_password
+      BTC_STACK_BUILDER_REDIS__SSL: "true"
+      BTC_STACK_BUILDER_BINANCE__API_KEY_FILE: /run/secrets/binance_api_key
+      BTC_STACK_BUILDER_BINANCE__API_SECRET_FILE: /run/secrets/binance_api_secret
+      BTC_STACK_BUILDER_DERIBIT__API_KEY_FILE: /run/secrets/deribit_api_key
+      BTC_STACK_BUILDER_DERIBIT__API_SECRET_FILE: /run/secrets/deribit_api_secret
+      BTC_STACK_BUILDER_PORTFOLIO__COLD_WALLET_ADDRESS_FILE: /run/secrets/cold_wallet_address
+      BTC_STACK_BUILDER_TELEGRAM_ALERTS__BOT_TOKEN_FILE: /run/secrets/telegram_bot_token
+      BTC_STACK_BUILDER_TELEGRAM_ALERTS__CHAT_ID_FILE: /run/secrets/telegram_chat_id
+    volumes:
+      - ./config:/app/config:ro
+      - ./logs:/app/logs
+      - ./data:/app/data
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+      restart_policy:
+        condition: any
+        delay: 10s
+        max_attempts: 5
+        window: 120s
+    secrets:
+      - postgres_password
+      - redis_password
+      - binance_api_key
+      - binance_api_secret
+      - deribit_api_key
+      - deribit_api_secret
+      - cold_wallet_address
+      - telegram_bot_token
+      - telegram_chat_id
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200m"
+        max-file: "10"
+    command: ["--environment", "production", "--metrics-port", "8000"]
+
+  # Flower for Celery Task Monitoring - Production Configuration
+  flower:
+    restart: always
+    user: "nobody:nogroup"
+    environment:
+      FLOWER_BROKER: rediss://:${REDIS_PASSWORD}@redis:6379/0
+      FLOWER_PORT: 5555
+      FLOWER_BASIC_AUTH: ${FLOWER_USER:-admin}:${FLOWER_PASSWORD:-changeme}
+      FLOWER_PERSISTENT: 1
+      FLOWER_DB: /data/flower.db
+      FLOWER_BROKER_API: rediss://:${REDIS_PASSWORD}@redis:6379/0
+      FLOWER_PURGE_OFFLINE_WORKERS: 30
+      FLOWER_MAX_TASKS: 10000
+      FLOWER_CERTFILE: /etc/ssl/certs/flower.crt
+      FLOWER_KEYFILE: /etc/ssl/private/flower.key
+    volumes:
+      - flower_data:/data
+      - ./infra/ssl/flower:/etc/ssl:ro
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+# Use external network for production
+networks:
+  btc-stack-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16
+    driver_opts:
+      com.docker.network.bridge.name: btcstack_prod_net
+      com.docker.network.driver.mtu: 1500
+    labels:
+      com.btcstack.environment: "production"
+      com.btcstack.network.purpose: "btc-stack-builder-production"
+
+# Define Docker secrets for sensitive data
+secrets:
+  postgres_password:
+    file: ./secrets/postgres_password.txt
+  redis_password:
+    file: ./secrets/redis_password.txt
+  grafana_admin_password:
+    file: ./secrets/grafana_admin_password.txt
+  binance_api_key:
+    file: ./secrets/binance_api_key.txt
+  binance_api_secret:
+    file: ./secrets/binance_api_secret.txt
+  deribit_api_key:
+    file: ./secrets/deribit_api_key.txt
+  deribit_api_secret:
+    file: ./secrets/deribit_api_secret.txt
+  cold_wallet_address:
+    file: ./secrets/cold_wallet_address.txt
+  telegram_bot_token:
+    file: ./secrets/telegram_bot_token.txt
+  telegram_chat_id:
+    file: ./secrets/telegram_chat_id.txt
+
+# Additional volumes for production
+volumes:
+  flower_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PWD}/data/flower
+      o: bind

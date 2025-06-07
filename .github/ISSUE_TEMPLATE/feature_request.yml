@@ -1,0 +1,175 @@
+name: Feature Request
+description: Suggest an enhancement or new feature for the BTC Stack-Builder Bot
+title: "[FEATURE]: "
+labels: ["enhancement", "triage"]
+assignees:
+  - monoti
+body:
+  - type: markdown
+    attributes:
+      value: |
+        # BTC Stack-Builder Bot Feature Request
+        Thank you for suggesting an enhancement to the BTC Stack-Builder Bot. Your ideas help us improve the system's effectiveness in maximizing Bitcoin accumulation.
+        
+        **Important**: Please ensure no sensitive information (API keys, private keys, wallet addresses) is included in your request.
+
+  - type: dropdown
+    id: feature_type
+    attributes:
+      label: Feature Type
+      description: What type of enhancement are you proposing?
+      options:
+        - Strategy Enhancement (improve existing strategy)
+        - New Trading Strategy
+        - Exchange Integration (new exchange)
+        - Risk Management Improvement
+        - Performance Optimization
+        - Monitoring/Metrics Enhancement
+        - UI/Dashboard Feature
+        - Security Enhancement
+        - Other (please specify in description)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: affected_component
+    attributes:
+      label: Affected Component
+      description: Which component of the bot would this feature primarily affect?
+      options:
+        - Basis Harvest Strategy (25%)
+        - Funding Capture Strategy (10%)
+        - Option Premium Strategy (5%)
+        - Core HODL Component (60%)
+        - Risk Management / Margin Guard
+        - Portfolio Management
+        - Exchange Gateway (Binance)
+        - Exchange Gateway (Deribit)
+        - New Exchange Integration
+        - Monitoring / Metrics
+        - Database / State Management
+        - Multiple Components
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Feature Description
+      description: Provide a clear and detailed description of the feature you're proposing
+      placeholder: I would like the bot to implement a new strategy that...
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation and Benefits
+      description: Why should this feature be implemented? What benefits would it bring?
+      placeholder: |
+        This feature would improve BTC accumulation by...
+        It would reduce risk by...
+        It would enhance monitoring capabilities by...
+    validations:
+      required: true
+
+  - type: textarea
+    id: implementation
+    attributes:
+      label: Potential Implementation Approach
+      description: If you have ideas on how this could be implemented, please share them
+      placeholder: |
+        This could be implemented by adding a new module that...
+        The algorithm could work by first checking...
+        The UI could display...
+    validations:
+      required: false
+
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Expected Impact on BTC Accumulation
+      description: How would this feature affect the bot's primary objective?
+      options:
+        - Significant improvement in BTC accumulation rate
+        - Moderate improvement in BTC accumulation rate
+        - Slight improvement in BTC accumulation rate
+        - Risk reduction with same accumulation rate
+        - Improved usability/monitoring with same accumulation rate
+        - No direct impact on accumulation rate
+    validations:
+      required: true
+
+  - type: dropdown
+    id: complexity
+    attributes:
+      label: Estimated Implementation Complexity
+      description: How complex do you think this feature would be to implement?
+      options:
+        - Simple (few days of work)
+        - Moderate (1-2 weeks of work)
+        - Complex (several weeks of work)
+        - Very Complex (architectural changes required)
+        - Not sure
+    validations:
+      required: false
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Suggested Priority
+      description: How important do you think this feature is?
+      options:
+        - Critical (blocking effective operation)
+        - High (significant value addition)
+        - Medium (valuable but not urgent)
+        - Low (nice to have)
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative Solutions
+      description: Are there alternative ways to achieve similar benefits?
+      placeholder: Instead of implementing this feature, we could...
+    validations:
+      required: false
+
+  - type: textarea
+    id: market_conditions
+    attributes:
+      label: Relevant Market Conditions
+      description: Are there specific market conditions where this feature would be most valuable?
+      placeholder: |
+        This feature would be particularly valuable during:
+        - High volatility periods
+        - Specific futures curve shapes (contango/backwardation)
+        - Specific funding rate environments
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Information
+      description: Any additional context, references, or information that might be helpful
+      placeholder: |
+        Similar features exist in other systems like...
+        Research papers that support this approach include...
+        Historical data suggests this would improve yields by...
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this feature request, you agree to follow our contribution guidelines
+      options:
+        - label: I have removed all sensitive information (API keys, private keys, wallet addresses) from my request
+          required: true
+        - label: I have searched for similar feature requests before creating this one
+          required: true
+        - label: I understand that feature requests are evaluated based on alignment with the bot's prime directive of maximizing BTC accumulation
+          required: true

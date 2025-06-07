@@ -1,0 +1,176 @@
+name: Bug Report
+description: Report a bug in the BTC Stack-Builder Bot
+title: "[BUG]: "
+labels: ["bug", "triage"]
+assignees:
+  - monoti
+body:
+  - type: markdown
+    attributes:
+      value: |
+        # BTC Stack-Builder Bot Bug Report
+        Thank you for taking the time to fill out this bug report. The more information you provide, the faster we can diagnose and fix the issue.
+        
+        **Important**: Please ensure no sensitive information (API keys, private keys, wallet addresses) is included in your report.
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      description: In which environment did you encounter the bug?
+      options:
+        - Development
+        - Testnet
+        - Production
+    validations:
+      required: true
+
+  - type: dropdown
+    id: strategy
+    attributes:
+      label: Affected Strategy
+      description: Which strategy component is affected by this bug?
+      options:
+        - Basis Harvest (25%)
+        - Funding Capture (10%)
+        - Option Premium (5%)
+        - Core HODL (60%)
+        - Risk Management / Margin Guard
+        - Portfolio Management
+        - Exchange Gateway (Binance)
+        - Exchange Gateway (Deribit)
+        - Monitoring / Metrics
+        - Multiple Components
+        - Not Sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: version
+    attributes:
+      label: Bot Version
+      description: Which version of the bot are you running?
+      options:
+        - Latest (main branch)
+        - v0.1.0 (initial release)
+        - Custom/Modified version
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: Provide a clear and concise description of the bug
+      placeholder: The bot fails when trying to...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Detailed steps to reproduce the behavior
+      placeholder: |
+        1. Configure the bot with...
+        2. Start the bot with command...
+        3. Wait for the strategy to...
+        4. Observe error in...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+      placeholder: The bot should have...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error Logs
+      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
+      render: shell
+      placeholder: |
+        2025-06-07 14:30:22 ERROR [btc_stack_builder.strategies.basis_harvest] Error executing strategy...
+    validations:
+      required: false
+
+  - type: textarea
+    id: configuration
+    attributes:
+      label: Configuration
+      description: Please provide your configuration (with sensitive information redacted)
+      render: yaml
+      placeholder: |
+        # Example config snippet
+        basis_harvest:
+          enabled: true
+          entry_threshold: 0.05
+          max_leverage: 1.5
+    validations:
+      required: false
+
+  - type: dropdown
+    id: market_conditions
+    attributes:
+      label: Market Conditions
+      description: What were the market conditions when the bug occurred?
+      options:
+        - Normal Trading
+        - High Volatility
+        - Low Liquidity
+        - Futures Backwardation
+        - Futures Contango
+        - Negative Funding Rates
+        - Positive Funding Rates
+        - Not Relevant
+    validations:
+      required: false
+
+  - type: input
+    id: btc_price
+    attributes:
+      label: BTC Price Range
+      description: Approximate BTC price range when the issue occurred (if relevant)
+      placeholder: "e.g. $45,000 - $46,000"
+    validations:
+      required: false
+
+  - type: textarea
+    id: system_info
+    attributes:
+      label: System Information
+      description: Please provide information about your deployment environment
+      placeholder: |
+        - OS: Ubuntu 22.04
+        - Docker version: 24.0.5
+        - Docker Compose version: 2.20.2
+        - CPU: 4 cores
+        - RAM: 8GB
+        - Disk: 100GB SSD
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Information
+      description: Any additional context or information that might be helpful
+      placeholder: I noticed this happens only when...
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our contribution guidelines
+      options:
+        - label: I have removed all sensitive information (API keys, private keys, wallet addresses) from my report
+          required: true
+        - label: I have searched for similar issues before creating this one
+          required: true
