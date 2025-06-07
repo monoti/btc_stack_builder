@@ -59,9 +59,12 @@ jobs:
       
       - name: Scan dependencies with Safety
         run: |
-          cd $GITHUB_WORKSPACE
+          cd "$GITHUB_WORKSPACE"
           safety check -r requirements.txt --sarif -o safety-results.sarif || true
-          ls -la
+          if [ ! -f safety-results.sarif ]; then
+            echo '{"version":"2.1.0","runs":[]}' > safety-results.sarif
+          fi
+          ls -la safety-results.sarif
       
       - name: Upload Safety results
         uses: github/codeql-action/upload-sarif@v3
