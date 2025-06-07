@@ -6,7 +6,7 @@ including basis calculation, funding rate calculation, margin ratio calculation,
 position PnL calculation, and various Bitcoin/timestamp conversion utilities.
 """
 import math
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from decimal import Decimal, ROUND_HALF_UP, getcontext
 from typing import Dict, Optional, Tuple, Union, List, Any
 
@@ -678,8 +678,8 @@ def get_next_quarterly_expiry(current_date: Optional[datetime] = None) -> dateti
     else:
         next_month = quarter_month + 1
         next_year = year
-    
-    last_day = datetime(next_year, next_month, 1, tzinfo=timezone.utc) - timezone.timedelta(days=1)
+
+    last_day = datetime(next_year, next_month, 1, tzinfo=timezone.utc) - timedelta(days=1)
     
     # Find the last Friday
     weekday = last_day.weekday()
@@ -687,8 +687,8 @@ def get_next_quarterly_expiry(current_date: Optional[datetime] = None) -> dateti
         days_to_subtract = weekday + 3
     else:  # If last day is Friday or later
         days_to_subtract = weekday - 4
-    
-    last_friday = last_day - timezone.timedelta(days=days_to_subtract)
+
+    last_friday = last_day - timedelta(days=days_to_subtract)
     
     # Set time to 16:00 UTC (common futures expiry time)
     expiry_date = datetime(last_friday.year, last_friday.month, last_friday.day, 
