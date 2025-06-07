@@ -585,6 +585,7 @@ class DeribitGateway(ExchangeGateway):
             logger.error("Error fetching balances", exc_info=True)
             await self._handle_ccxt_error(e)
             return {}
+
     async def get_positions(self) -> list[Position]:
         """
         Get all open positions.
@@ -635,6 +636,7 @@ class DeribitGateway(ExchangeGateway):
             logger.error("Error fetching positions", exc_info=True)
             await self._handle_ccxt_error(e)
             return []
+
     async def get_margin_status(self) -> MarginStatus:
         """
         Get current margin status.

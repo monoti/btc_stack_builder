@@ -576,6 +576,7 @@ class BinanceGateway(ExchangeGateway):
             logger.error(f"Error fetching ticker for {symbol}", exc_info=True)
             await self._handle_ccxt_error(e)
             return {}  # Explicitly return an empty dictionary in case of an error
+
     async def get_orderbook(self, symbol: str, limit: int = 20) -> dict[str, Any]:
         """
         Get current orderbook for a symbol.
@@ -610,6 +611,7 @@ class BinanceGateway(ExchangeGateway):
             logger.error(f"Error fetching orderbook for {symbol}", exc_info=True)
             await self._handle_ccxt_error(e)
             return {}  # Explicitly return an empty dictionary in case of an error
+
     async def get_balance(self) -> dict[str, dict[str, Decimal]]:
         """
         Get account balances for all assets.
@@ -658,6 +660,7 @@ class BinanceGateway(ExchangeGateway):
             logger.error("Error fetching balances", exc_info=True)
             await self._handle_ccxt_error(e)
         return balances  # Explicitly return the balances dictionary, even if empty
+
     async def get_positions(self) -> list[Position]:
         """
         Get all open positions.
@@ -689,6 +692,7 @@ class BinanceGateway(ExchangeGateway):
             logger.error("Error fetching positions", exc_info=True)
             await self._handle_ccxt_error(e)
         return positions  # Explicitly return the positions list, even if empty
+
     async def get_margin_status(self) -> MarginStatus:
         """
         Get current margin status for futures account.
@@ -1034,6 +1038,7 @@ class BinanceGateway(ExchangeGateway):
             )
             await self._handle_ccxt_error(e)
             return False
+
     async def set_leverage(self, symbol: str, leverage: int) -> bool:
         """
         Set leverage for a futures symbol.
@@ -1161,6 +1166,7 @@ class BinanceGateway(ExchangeGateway):
             logger.error(f"Error fetching funding history for {symbol}", exc_info=True)
             await self._handle_ccxt_error(e)
         return []
+
     async def get_open_orders(self, symbol: str | None = None) -> list[Order]:
         """
         Get all open orders, optionally filtered by symbol.
