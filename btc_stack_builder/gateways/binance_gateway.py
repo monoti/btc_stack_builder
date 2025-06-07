@@ -1033,7 +1033,7 @@ class BinanceGateway(ExchangeGateway):
                 exc_info=True,
             )
             await self._handle_ccxt_error(e)
-
+            return False
     async def set_leverage(self, symbol: str, leverage: int) -> bool:
         """
         Set leverage for a futures symbol.
