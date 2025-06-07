@@ -12,7 +12,7 @@ Designed for long-term stack growth and built from the ground up for reliability
   * 25 % Basis Harvest (quarterly futures contango)  
   * 10 % Funding Capture (negative funding opportunism)  
   * 5 %  Option Premium (cash-secured put wheel)
-* **Micro-services Architecture** (Python 3.12, PostgreSQL, Redis, Celery, Prometheus, Grafana).
+* **Micro-services Architecture** (Python 3.13, PostgreSQL, Redis, Celery, Prometheus, Grafana).
 * **Exchange Gateways** for Binance (spot, COIN-M & PERP) and Deribit (options) via `ccxt-pro`.
 * **Risk & Margin Guard** checks margin every 5 min, auto-tops-up or safely unwinds.
 * **State-Light Design** – full recovery from DB and exchange APIs after restart.
@@ -49,7 +49,7 @@ Containers are orchestrated with **docker-compose**; each service exports Promet
 
 ### 1. Prerequisites
 * Docker ≥ 24 & Docker Compose v2
-* (Optional local run) Python 3.12+, `pipx` or `poetry`
+* (Optional local run) Python 3.13+, `pipx` or `poetry`
 
 ### 2. Clone & build
 

@@ -7,7 +7,7 @@ name = "btc_stack_builder"
 version = "0.1.0"
 description = "Autonomous Bitcoin accumulation bot with multiple trading strategies"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 license = {text = "MIT"}
 authors = [
     {name = "BTC Stack Builder Team"}
@@ -15,13 +15,13 @@ authors = [
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Financial and Insurance Industry",
-    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Office/Business :: Financial :: Investment",
     "Operating System :: OS Independent",
     "Private :: Do Not Upload"
 ]
 dependencies = [
-    "ccxt-pro>=2.0.0",
+    "ccxt>=2.0.0",
     "websocket-client>=1.6.0",
     "requests>=2.31.0",
     "aiohttp>=3.8.5",
@@ -44,6 +44,9 @@ dependencies = [
     "python-dateutil>=2.8.2",
     "pytz>=2023.3",
     "tenacity>=8.2.0",
+    "structlog>=24.0.0",
+    "python-json-logger>=3.3.0",
+    "pyyaml>=6.0.2",
 ]
 
 [project.optional-dependencies]
@@ -67,7 +70,7 @@ btc-stack-builder = "btc_stack_builder.main:main"
 packages = ["btc_stack_builder"]
 
 [tool.ruff]
-target-version = "py312"
+target-version = "py313"
 line-length = 100
 select = [
     "E",   # pycodestyle errors
@@ -90,10 +93,10 @@ known-first-party = ["btc_stack_builder"]
 
 [tool.black]
 line-length = 100
-target-version = ["py312"]
+target-version = ["py313"]
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.13"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
@@ -102,4 +105,5 @@ disallow_incomplete_defs = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = "test_*.py"
+addopts = "--cov=btc_stack_builder --cov-report=term-missing"
 asyncio_mode = "auto"
