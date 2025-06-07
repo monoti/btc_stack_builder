@@ -27,13 +27,13 @@ jobs:
         uses: actions/checkout@v4
       
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v3
         with:
           languages: python
           queries: security-and-quality
       
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
+        uses: github/codeql-action/analyze@v3
         with:
           category: "/language:python"
 
@@ -86,7 +86,7 @@ jobs:
         run: bandit -r btc_stack_builder -x btc_stack_builder/tests -f json -o bandit-results.json
       
       - name: Upload Bandit results
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
           sarif_file: bandit-results.json
@@ -147,7 +147,7 @@ jobs:
           severity: 'CRITICAL,HIGH'
       
       - name: Upload Trivy scan results
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
           sarif_file: trivy-results.sarif
@@ -161,7 +161,7 @@ jobs:
           output: dockle-results.sarif
       
       - name: Upload Dockle scan results
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
           sarif_file: dockle-results.sarif
