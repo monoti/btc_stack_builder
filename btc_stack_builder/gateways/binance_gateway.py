@@ -915,6 +915,13 @@ class BinanceGateway(ExchangeGateway):
         except Exception as e:
             logger.error(f"Error fetching funding rate for {symbol}", exc_info=True)
             await self._handle_ccxt_error(e)
+            return {
+                "symbol": symbol,
+                "funding_rate": None,
+                "funding_time": None,
+                "mark_price": None,
+                "index_price": None,
+            }
 
     async def get_futures_basis(self, spot_symbol: str, futures_symbol: str) -> Decimal:
         """
