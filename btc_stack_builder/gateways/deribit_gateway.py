@@ -584,7 +584,7 @@ class DeribitGateway(ExchangeGateway):
         except Exception as e:
             logger.error("Error fetching balances", exc_info=True)
             await self._handle_ccxt_error(e)
-
+            return {}
     async def get_positions(self) -> list[Position]:
         """
         Get all open positions.
