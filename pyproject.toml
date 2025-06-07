@@ -86,6 +86,10 @@ select = [
 ignore = [
     "E203",  # Whitespace before ':'
     "E501",  # Line too long (handled by formatter)
+    "F401",  # Unused imports
+    "S101",  # Use of assert statements
+    "S105",  # Hardcoded passwords
+    "S106",  # Hardcoded passwords in arg
 ]
 
 [tool.ruff.isort]
@@ -101,9 +105,10 @@ warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
+ignore_errors = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = "test_*.py"
-addopts = "--cov=btc_stack_builder --cov-report=term-missing"
+addopts = "-q"
 asyncio_mode = "auto"

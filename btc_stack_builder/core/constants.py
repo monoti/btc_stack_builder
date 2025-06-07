@@ -4,9 +4,9 @@ Constants module for BTC Stack-Builder Bot.
 This module defines all the configuration constants used throughout the application,
 including portfolio allocations, risk thresholds, and strategy parameters.
 """
+
 from decimal import Decimal
 from typing import Final
-
 
 # ======== Portfolio Allocation Constants ========
 # Core HODL (60% of total assets)
@@ -19,12 +19,14 @@ FUNDING_CAPTURE_ALLOCATION: Final[Decimal] = Decimal("0.10")
 OPTION_PREMIUM_ALLOCATION: Final[Decimal] = Decimal("0.05")
 
 # Validate total allocation equals 100%
-assert sum([
-    CORE_HODL_ALLOCATION,
-    BASIS_HARVEST_ALLOCATION,
-    FUNDING_CAPTURE_ALLOCATION,
-    OPTION_PREMIUM_ALLOCATION
-]) == Decimal("1.00"), "Portfolio allocations must sum to 1.00"
+assert sum(
+    [
+        CORE_HODL_ALLOCATION,
+        BASIS_HARVEST_ALLOCATION,
+        FUNDING_CAPTURE_ALLOCATION,
+        OPTION_PREMIUM_ALLOCATION,
+    ]
+) == Decimal("1.00"), "Portfolio allocations must sum to 1.00"
 
 
 # ======== Risk Management Constants ========
