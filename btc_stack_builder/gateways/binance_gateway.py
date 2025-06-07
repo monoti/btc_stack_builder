@@ -1198,6 +1198,7 @@ class BinanceGateway(ExchangeGateway):
         except Exception as e:
             logger.error("Error fetching open orders", symbol=symbol, exc_info=True)
             await self._handle_ccxt_error(e)
+            return []
 
     async def close(self) -> None:
         """
