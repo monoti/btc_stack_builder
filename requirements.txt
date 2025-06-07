@@ -6,8 +6,8 @@ aiohttp==3.9.1  # Using version with prebuilt wheels
 aiodns==3.1.1  # For faster DNS resolution with aiohttp
 
 # Data Models and Validation
-pydantic==2.5.2
-pydantic-settings==2.1.0
+pydantic==2.11.5
+pydantic-settings==2.9.1
 
 # Database
 sqlalchemy==2.0.23
@@ -36,7 +36,7 @@ pytest-mock==3.12.0
 
 # Utilities
 numpy==2.3.0  # Using newer version with prebuilt wheels
-pandas==2.0.3
+pandas==2.3.0
 python-dateutil==2.8.2
 pytz==2023.3.post1
 tenacity==8.2.3  # For retry logic
@@ -50,3 +50,5 @@ scipy==1.15.3  # For options Greeks calculations
 # Build dependencies
 setuptools>=65.5.1
 wheel>=0.38.0
+maturin>=1.6.0
+cython>=3.0.0
