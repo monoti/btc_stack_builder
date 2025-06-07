@@ -20,9 +20,10 @@ WORKDIR /app
 # Copy requirements file
 COPY requirements.txt .
 
-# Install dependencies into a virtual environment
+# Install build dependencies first, then other dependencies into a virtual environment
 RUN python -m venv /venv && \
     /venv/bin/pip install --upgrade pip && \
+    /venv/bin/pip install setuptools wheel && \
     /venv/bin/pip install -r requirements.txt
 
 # Second stage: runtime image
