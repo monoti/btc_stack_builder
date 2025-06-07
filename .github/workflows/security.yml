@@ -59,9 +59,12 @@ jobs:
       
       - name: Scan dependencies with Safety
         run: |
-          cd $GITHUB_WORKSPACE
+          cd "$GITHUB_WORKSPACE"
           safety check -r requirements.txt --sarif -o safety-results.sarif || true
-          ls -la
+          if [ ! -f safety-results.sarif ]; then
+            echo '{"version":"2.1.0","runs":[]}' > safety-results.sarif
+          fi
+          ls -la safety-results.sarif
       
       - name: Upload Safety results
         uses: github/codeql-action/upload-sarif@v3
@@ -71,7 +74,13 @@ jobs:
           category: safety
 
       - name: Scan dependencies with pip-audit
-        run: pip-audit --format sarif --output-file pip-audit-results.sarif --fail-on-vuln || true
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          pip-audit --format sarif --output-file pip-audit-results.sarif --fail-on-vuln || true
+          if [ ! -f pip-audit-results.sarif ]; then
+            echo '{"version":"2.1.0","runs":[]}' > pip-audit-results.sarif
+          fi
+          ls -la pip-audit-results.sarif
 
       - name: Upload pip-audit results
         uses: github/codeql-action/upload-sarif@v3
