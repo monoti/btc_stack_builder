@@ -657,7 +657,7 @@ class BinanceGateway(ExchangeGateway):
         except Exception as e:
             logger.error("Error fetching balances", exc_info=True)
             await self._handle_ccxt_error(e)
-
+        return balances  # Explicitly return the balances dictionary, even if empty
     async def get_positions(self) -> list[Position]:
         """
         Get all open positions.
