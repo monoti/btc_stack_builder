@@ -109,7 +109,7 @@ def calculate_margin_ratio(
     """
     Calculate the margin ratio for risk management.
     
-    Margin Ratio = (Wallet Balance / Maintenance Margin) * 100
+    Margin Ratio = Wallet Balance / Maintenance Margin
     
     Args:
         wallet_balance: Current wallet balance
