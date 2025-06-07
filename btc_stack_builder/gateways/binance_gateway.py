@@ -688,7 +688,7 @@ class BinanceGateway(ExchangeGateway):
         except Exception as e:
             logger.error("Error fetching positions", exc_info=True)
             await self._handle_ccxt_error(e)
-
+        return positions  # Explicitly return the positions list, even if empty
     async def get_margin_status(self) -> MarginStatus:
         """
         Get current margin status for futures account.
