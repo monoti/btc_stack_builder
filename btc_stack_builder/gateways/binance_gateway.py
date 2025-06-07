@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
-import ccxt.pro as ccxtpro
+import ccxt
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -112,32 +112,32 @@ class BinanceGateway(ExchangeGateway):
                 options['options']['test'] = True
                 
             # Initialize spot client
-            self.spot_client = ccxtpro.binance(options)
+            self.spot_client = ccxt.binance(options)
             
             # Initialize futures client (COIN-M)
             futures_options = options.copy()
             futures_options['options'] = options['options'].copy()
             futures_options['options']['defaultType'] = 'delivery'
-            self.futures_client = ccxtpro.binance(futures_options)
+            self.futures_client = ccxt.binance(futures_options)
             
             # Initialize perpetual futures client (USDT-M)
             perp_options = options.copy()
             perp_options['options'] = options['options'].copy()
             perp_options['options']['defaultType'] = 'future'
-            self.perpetual_client = ccxtpro.binance(perp_options)
+            self.perpetual_client = ccxt.binance(perp_options)
             
             # Load markets for all clients
             await asyncio.gather(
-                self.spot_client.load_markets(),
-                self.futures_client.load_markets(),
-                self.perpetual_client.load_markets()
+                self._async_execute(self.spot_client.load_markets),
+                self._async_execute(self.futures_client.load_markets),
+                self._async_execute(self.perpetual_client.load_markets)
             )
             
             # Cache symbol information
             self._cache_symbols_info()
             
             # Fetch exchange information including rate limits
-            exchange_info = await self.spot_client.public_get_exchangeinfo()
+            exchange_info = await self._async_execute(self.spot_client.public_get_exchangeinfo)
             self._process_exchange_info(exchange_info)
             
             # Test authentication by fetching account information
@@ -153,10 +153,10 @@ class BinanceGateway(ExchangeGateway):
             
             self.initialized = True
             
-        except ccxtpro.AuthenticationError as e:
+        except ccxt.AuthenticationError as e:
             logger.error("Binance authentication failed", exc_info=True)
             raise AuthenticationError(f"Binance authentication failed: {str(e)}")
-        except ccxtpro.NetworkError as e:
+        except ccxt.NetworkError as e:
             logger.error("Binance connection failed", exc_info=True)
             raise ConnectionError(f"Binance connection failed: {str(e)}")
         except Exception as e:
@@ -218,7 +218,7 @@ class BinanceGateway(ExchangeGateway):
         # Store exchange info for later use
         self.exchange_info = exchange_info
     
-    def _get_client_for_symbol(self, symbol: str) -> ccxtpro.binance:
+    def _get_client_for_symbol(self, symbol: str) -> ccxt.Exchange:
         """
         Get the appropriate CCXT client for a given symbol.
         
@@ -258,15 +258,15 @@ class BinanceGateway(ExchangeGateway):
         Raises:
             Appropriate gateway-specific exception
         """
-        if isinstance(e, ccxtpro.AuthenticationError):
+        if isinstance(e, ccxt.AuthenticationError):
             raise AuthenticationError(f"Binance authentication error: {str(e)}")
-        elif isinstance(e, ccxtpro.InsufficientFunds):
+        elif isinstance(e, ccxt.InsufficientFunds):
             raise InsufficientFundsError(f"Insufficient funds: {str(e)}")
-        elif isinstance(e, ccxtpro.RateLimitExceeded):
+        elif isinstance(e, ccxt.RateLimitExceeded):
             raise RateLimitError(f"Rate limit exceeded: {str(e)}")
-        elif isinstance(e, ccxtpro.NetworkError):
+        elif isinstance(e, ccxt.NetworkError):
             raise ConnectionError(f"Network error: {str(e)}")
-        elif isinstance(e, ccxtpro.ExchangeError):
+        elif isinstance(e, ccxt.ExchangeError):
             if "Order does not exist" in str(e):
                 raise OrderError(f"Order not found: {str(e)}")
             else:
@@ -274,13 +274,29 @@ class BinanceGateway(ExchangeGateway):
         else:
             raise GatewayError(f"Unexpected error: {str(e)}")
     
+    async def _async_execute(self, func, *args, **kwargs):
+        """
+        Execute a synchronous CCXT method in an asynchronous context.
+        
+        Args:
+            func: Synchronous CCXT method to call
+            *args: Positional arguments for the method
+            **kwargs: Keyword arguments for the method
+            
+        Returns:
+            Result of the method call
+        """
+        # Run the synchronous method in a thread pool
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, lambda: func(*args, **kwargs))
+    
     @retry(
-        retry=retry_if_exception_type((ccxtpro.NetworkError, ccxtpro.ExchangeNotAvailable)),
+        retry=retry_if_exception_type((ccxt.NetworkError, ccxt.ExchangeNotAvailable)),
         stop=stop_after_attempt(MAX_RETRIES),
         wait=wait_exponential(multiplier=1, min=1, max=10),
         reraise=True
     )
-    async def _execute_with_retry(self, method: str, client: ccxtpro.Exchange, *args, **kwargs) -> Any:
+    async def _execute_with_retry(self, method: str, client: ccxt.Exchange, *args, **kwargs) -> Any:
         """
         Execute a CCXT method with retry logic for transient errors.
         
@@ -300,8 +316,8 @@ class BinanceGateway(ExchangeGateway):
             # Get the method from the client
             func = getattr(client, method)
             
-            # Execute the method
-            result = await func(*args, **kwargs)
+            # Execute the method (synchronously in a thread pool)
+            result = await self._async_execute(func, *args, **kwargs)
             
             # Update rate limit counter
             self._update_rate_limit_counter(method)
@@ -1180,7 +1196,8 @@ class BinanceGateway(ExchangeGateway):
             
             for client in clients:
                 if client:
-                    await client.close()
+                    # Standard ccxt doesn't have async close method
+                    pass
             
             logger.info("Binance gateway closed")
         except Exception as e:

@@ -11,7 +11,7 @@ from datetime import datetime, timezone, timedelta
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
-import ccxt.pro as ccxtpro
+import ccxt
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -109,10 +109,10 @@ class DeribitGateway(ExchangeGateway):
                 }
             
             # Initialize client
-            self.client = ccxtpro.deribit(options)
+            self.client = ccxt.deribit(options)
             
             # Load markets
-            await self.client.load_markets()
+            await self._async_execute(self.client.load_markets)
             
             # Cache instrument information
             self._cache_instruments_info()
@@ -130,10 +130,10 @@ class DeribitGateway(ExchangeGateway):
             
             self.initialized = True
             
-        except ccxtpro.AuthenticationError as e:
+        except ccxt.AuthenticationError as e:
             logger.error("Deribit authentication failed", exc_info=True)
             raise AuthenticationError(f"Deribit authentication failed: {str(e)}")
-        except ccxtpro.NetworkError as e:
+        except ccxt.NetworkError as e:
             logger.error("Deribit connection failed", exc_info=True)
             raise ConnectionError(f"Deribit connection failed: {str(e)}")
         except Exception as e:
@@ -174,15 +174,15 @@ class DeribitGateway(ExchangeGateway):
         Raises:
             Appropriate gateway-specific exception
         """
-        if isinstance(e, ccxtpro.AuthenticationError):
+        if isinstance(e, ccxt.AuthenticationError):
             raise AuthenticationError(f"Deribit authentication error: {str(e)}")
-        elif isinstance(e, ccxtpro.InsufficientFunds):
+        elif isinstance(e, ccxt.InsufficientFunds):
             raise InsufficientFundsError(f"Insufficient funds: {str(e)}")
-        elif isinstance(e, ccxtpro.RateLimitExceeded):
+        elif isinstance(e, ccxt.RateLimitExceeded):
             raise RateLimitError(f"Rate limit exceeded: {str(e)}")
-        elif isinstance(e, ccxtpro.NetworkError):
+        elif isinstance(e, ccxt.NetworkError):
             raise ConnectionError(f"Network error: {str(e)}")
-        elif isinstance(e, ccxtpro.ExchangeError):
+        elif isinstance(e, ccxt.ExchangeError):
             if "Order not found" in str(e):
                 raise OrderError(f"Order not found: {str(e)}")
             else:
@@ -190,8 +190,24 @@ class DeribitGateway(ExchangeGateway):
         else:
             raise GatewayError(f"Unexpected error: {str(e)}")
     
+    async def _async_execute(self, func, *args, **kwargs):
+        """
+        Execute a synchronous CCXT method in an asynchronous context.
+        
+        Args:
+            func: Synchronous CCXT method to call
+            *args: Positional arguments for the method
+            **kwargs: Keyword arguments for the method
+            
+        Returns:
+            Result of the method call
+        """
+        # Run the synchronous method in a thread pool
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, lambda: func(*args, **kwargs))
+    
     @retry(
-        retry=retry_if_exception_type((ccxtpro.NetworkError, ccxtpro.ExchangeNotAvailable)),
+        retry=retry_if_exception_type((ccxt.NetworkError, ccxt.ExchangeNotAvailable)),
         stop=stop_after_attempt(MAX_RETRIES),
         wait=wait_exponential(multiplier=1, min=1, max=10),
         reraise=True
@@ -218,8 +234,8 @@ class DeribitGateway(ExchangeGateway):
             # Get the method from the client
             func = getattr(self.client, method)
             
-            # Execute the method
-            result = await func(*args, **kwargs)
+            # Execute the method (synchronously in a thread pool)
+            result = await self._async_execute(func, *args, **kwargs)
             
             # Update rate limit counter
             self._update_rate_limit_counter(method)
@@ -1039,7 +1055,7 @@ class DeribitGateway(ExchangeGateway):
         """
         if self.client:
             try:
-                await self.client.close()
+                # Standard ccxt doesn't have async close method
                 logger.info("Deribit gateway closed")
             except Exception as e:
                 logger.error("Error closing Deribit gateway", exc_info=True)
