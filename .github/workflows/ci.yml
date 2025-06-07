@@ -61,7 +61,7 @@ jobs:
     needs: lint
     services:
       postgres:
-        image: "postgres:${{ env.POSTGRES_VERSION }}"
+        image: postgres:${{ env.POSTGRES_VERSION }}
         env:
           POSTGRES_USER: btcstack
           POSTGRES_PASSWORD: testpassword
@@ -75,7 +75,7 @@ jobs:
           --health-retries 5
       
       redis:
-        image: "redis:${{ env.REDIS_VERSION }}"
+        image: redis:${{ env.REDIS_VERSION }}
         ports:
           - 6379:6379
         options: >-
