@@ -77,7 +77,9 @@ class DatabaseConfig(BaseModel):
     def connection_string(self) -> str:
         """Generate SQLAlchemy connection string."""
         password = self.password.get_secret_value()
-        return f"postgresql://{self.username}:{password}@{self.host}:{self.port}/{self.database}"
+        return (
+            f"postgresql://{self.username}:{password}@" f"{self.host}:{self.port}/{self.database}"
+        )
 
 
 class RedisConfig(BaseModel):
@@ -294,7 +296,7 @@ def load_config(
     # Base configuration file (required)
     base_config_path = config_dir / f"{config_name}.yaml"
 
-    # Environment-specific configuration file (optional)
+    # Environment-specific config file (optional)
     env_config_path = config_dir / f"{config_name}.{environment.value}.yaml"
 
     # Load base configuration

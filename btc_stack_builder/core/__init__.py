@@ -1,7 +1,7 @@
 """
 Core module for BTC Stack-Builder Bot.
 
-This module exports the main models, constants, and utilities used throughout the project.
+This module exports main models, constants, and utilities used across the project.
 """
 
 __version__ = "0.1.0"

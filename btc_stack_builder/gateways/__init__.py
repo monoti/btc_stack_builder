@@ -15,11 +15,11 @@ from btc_stack_builder.core.models import (
     MarginStatus,
     Order,
     OrderSide,
-    OrderStatus,
+    # OrderStatus, # Unused in this file
     OrderType,
     Position,
-    PositionSide,
-    PositionStatus,
+    # PositionSide, # Unused in this file
+    # PositionStatus, # Unused in this file
 )
 
 from .binance_gateway import BinanceGateway

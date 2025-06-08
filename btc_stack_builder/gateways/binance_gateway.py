@@ -832,14 +832,19 @@ class BinanceGateway(ExchangeGateway):
             result = await self._execute_with_retry("cancel_order", client, order_id, symbol)
 
             logger.info(
-                f"Cancelled order: {order_id}", order_id=order_id, symbol=symbol, result=result
+                f"Cancelled order: {order_id}",
+                order_id=order_id,
+                symbol=symbol,
+                result=result,
             )
 
             return True
         except Exception as e:
             if "Order does not exist" in str(e):
                 logger.warning(
-                    f"Order not found when cancelling: {order_id}", order_id=order_id, symbol=symbol
+                    f"Order not found when cancelling: {order_id}",
+                    order_id=order_id,
+                    symbol=symbol,
                 )
                 return False
 
@@ -875,7 +880,10 @@ class BinanceGateway(ExchangeGateway):
             return self._convert_ccxt_order_to_internal(ccxt_order)
         except Exception as e:
             logger.error(
-                f"Error fetching order: {order_id}", order_id=order_id, symbol=symbol, exc_info=True
+                f"Error fetching order: {order_id}",
+                order_id=order_id,
+                symbol=symbol,
+                exc_info=True,
             )
             await self._handle_ccxt_error(e)
 
@@ -1003,15 +1011,16 @@ class BinanceGateway(ExchangeGateway):
                 raise ValueError(f"Invalid account types: {from_type} -> {to_type}")
 
             # Execute transfer
+            transfer_type = (
+                "MAIN_UMFUTURE"
+                if (from_type_binance == "SPOT" and to_type_binance == "FUTURES")
+                else "UMFUTURE_MAIN"
+            )
             result = await self._execute_with_retry(
                 "sapi_post_asset_transfer",
                 self.spot_client,
                 {
-                    "type": (
-                        "MAIN_UMFUTURE"
-                        if (from_type_binance == "SPOT" and to_type_binance == "FUTURES")
-                        else "UMFUTURE_MAIN"
-                    ),
+                    "type": transfer_type,
                     "asset": asset,
                     "amount": float(amount),
                 },
