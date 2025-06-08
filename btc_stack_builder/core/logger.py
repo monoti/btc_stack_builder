@@ -46,7 +46,9 @@ def ensure_log_directory() -> str:
     Returns:
         Path to the log directory
     """
-    log_dir = Path(LOG_DIR)
+    # Fetch LOG_DIR from environment variable directly to respond to monkeypatching in tests
+    log_dir_path_str = os.environ.get("BTC_STACK_BUILDER_LOG_DIR", "logs")
+    log_dir = Path(log_dir_path_str)
     log_dir.mkdir(parents=True, exist_ok=True)
     return str(log_dir)
 
@@ -130,55 +132,69 @@ def configure_file_handler(log_file: str, level: int = logging.DEBUG) -> logging
     return file_handler
 
 
-def add_process_info(logger: logging.Logger, **kwargs: Any) -> dict[str, Any]:
+def add_process_info(
+    logger: logging.Logger, method_name: str, event_dict: dict[str, Any]
+) -> dict[str, Any]:
     """
     Add process information to log record.
 
     Args:
-        logger: Logger instance
-        kwargs: Additional keyword arguments
+        logger: Logger instance (unused, part of structlog processor signature)
+        method_name: Name of the logging method (e.g., "info", "error")
+        event_dict: The event dictionary being processed.
 
     Returns:
-        Dictionary with process information
+        Modified event dictionary with process information.
     """
-    return {"pid": os.getpid(), "process_name": sys.argv[0], **kwargs}
+    event_dict["pid"] = os.getpid()
+    event_dict["process_name"] = sys.argv[0]
+    return event_dict
 
 
-def add_exception_info(logger: logging.Logger, **kwargs: Any) -> dict[str, Any]:
+def add_exception_info(
+    logger: logging.Logger, method_name: str, event_dict: dict[str, Any]
+) -> dict[str, Any]:
     """
     Add exception information to log record if an exception is being handled.
+    This processor is designed to be used *before* structlog.processors.format_exc_info.
 
     Args:
-        logger: Logger instance
-        kwargs: Additional keyword arguments
+        logger: Logger instance (unused)
+        method_name: Name of the logging method
+        event_dict: The event dictionary.
 
     Returns:
-        Dictionary with exception information if available
+        Modified event dictionary.
     """
-    exc_info = sys.exc_info()
-    if exc_info != (None, None, None):
-        exception_type, exception_value, exception_traceback = exc_info
-        return {
-            "exception_type": exception_type.__name__ if exception_type else None,
-            "exception_message": str(exception_value) if exception_value else None,
-            "exception_traceback": traceback.format_exc(),
-            **kwargs,
-        }
-    return kwargs
+    # This custom processor is mostly redundant if using `structlog.processors.format_exc_info`
+    # and passing `exc_info=True` to the logger call, as `format_exc_info` handles it.
+    # However, if we want specific fields for type/message before the full traceback:
+    if event_dict.get("exc_info"):  # Check if exc_info was passed to the log call
+        exc_info_tuple = sys.exc_info()
+        if exc_info_tuple != (None, None, None):
+            exception_type, exception_value, _ = exc_info_tuple
+            event_dict["exception_type"] = exception_type.__name__ if exception_type else None
+            event_dict["exception_message"] = str(exception_value) if exception_value else None
+            # `structlog.processors.format_exc_info` will add the full traceback to 'exception'
+    return event_dict
 
 
-def add_timestamp(logger: logging.Logger, **kwargs: Any) -> dict[str, Any]:
+def add_timestamp(
+    logger: logging.Logger, method_name: str, event_dict: dict[str, Any]
+) -> dict[str, Any]:
     """
     Add ISO-format timestamp to log record.
 
     Args:
-        logger: Logger instance
-        kwargs: Additional keyword arguments
+        logger: Logger instance (unused)
+        method_name: Name of the logging method
+        event_dict: The event dictionary.
 
     Returns:
-        Dictionary with timestamp information
+        Modified event dictionary with timestamp.
     """
-    return {"timestamp": datetime.utcnow().isoformat() + "Z", **kwargs}
+    event_dict["timestamp"] = datetime.utcnow().isoformat() + "Z"
+    return event_dict
 
 
 def setup_logger(name: str = "btc_stack_builder") -> logging.Logger:
@@ -234,10 +250,14 @@ def setup_logger(name: str = "btc_stack_builder") -> logging.Logger:
     logger.addHandler(error_handler)
 
     # Add trade file handler (for trade-specific logs)
-    trade_logger = logging.getLogger(f"{name}.trades")
-    trade_logger.setLevel(log_level)
-    trade_logger.propagate = False
-    trade_logger.addHandler(configure_file_handler(TRADE_LOG_FILE))
+    # Use the canonical trade logger name, consistent with get_trade_logger()
+    trade_logger_instance = logging.getLogger("btc_stack_builder.trades")
+    trade_logger_instance.setLevel(log_level)
+    trade_logger_instance.propagate = False
+    # Clear existing handlers for the trade logger to avoid duplication if setup_logger is called multiple times
+    if trade_logger_instance.handlers:
+        trade_logger_instance.handlers.clear()
+    trade_logger_instance.addHandler(configure_file_handler(TRADE_LOG_FILE))
 
     return logger
 
@@ -371,4 +391,4 @@ def log_strategy_execution(strategy_name: str) -> Callable:
 
 
 # Initialize default logger
-logger = setup_logger()
+default_app_logger = setup_logger()

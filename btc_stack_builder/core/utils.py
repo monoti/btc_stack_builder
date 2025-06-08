@@ -7,7 +7,7 @@ position PnL calculation, and various Bitcoin/timestamp conversion utilities.
 """
 
 import math
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 from decimal import ROUND_HALF_UP, Decimal, getcontext
 
 from scipy.stats import norm
@@ -440,10 +440,18 @@ def format_btc_amount(amount: Decimal, precision: int = 8, include_symbol: bool 
         Formatted BTC amount string
     """
     # Round to specified precision
-    rounded_amount = amount.quantize(Decimal("0." + "0" * precision))
+    quantizer = Decimal("0." + "0" * precision)
+    rounded_amount = amount.quantize(quantizer)
 
-    # Format with comma separators for thousands
-    formatted_amount = f"{rounded_amount:,}"
+    # Format with comma separators for thousands and fixed decimal places
+    if rounded_amount.is_zero():
+        # Force '0.00...' format for zero, respecting precision
+        formatted_amount = f"{Decimal('0'):.{precision}f}"
+    else:
+        # For non-zero, standard formatting should be okay,
+        # but let's ensure it also respects precision correctly for display.
+        # The f-string with ',.{precision}f' should give grouping and fixed decimal places.
+        formatted_amount = f"{rounded_amount:,.{precision}f}"
 
     # Add BTC symbol if requested
     if include_symbol:

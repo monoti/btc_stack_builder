@@ -14,7 +14,7 @@ __author__ = "BTC Stack Builder Team"
 __license__ = "MIT"
 
 
-from btc_stack_builder.core.logger import logger
+from btc_stack_builder.core.logger import default_app_logger as logger
 
 # Setup package-level logger
 logger.info(f"BTC Stack-Builder Bot v{__version__} initialized")
