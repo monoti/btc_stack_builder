@@ -110,21 +110,22 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install bandit semgrep
+          pip install "bandit[sarif]" semgrep
 
       - name: Run Bandit
         run: |
           bandit \
             -r btc_stack_builder \
             -x btc_stack_builder/tests \
-            -f json \
-            -o bandit-results.json
+            -f sarif \
+            -o bandit-results.sarif \
+            --exit-zero
       
       - name: Upload Bandit results
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: bandit-results.json
+          sarif_file: bandit-results.sarif
           category: bandit
       
       - name: Run Semgrep
