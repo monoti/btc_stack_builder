@@ -7,7 +7,7 @@ position PnL calculation, and various Bitcoin/timestamp conversion utilities.
 """
 
 import math
-from datetime import timezone, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 from decimal import ROUND_HALF_UP, Decimal, getcontext
 
 from scipy.stats import norm
@@ -518,7 +518,7 @@ def timestamp_to_datetime(timestamp: int | float) -> datetime:
         Equivalent datetime object (UTC)
     """
     # Convert a Unix timestamp to a datetime object, explicitly making it UTC aware.
-    return datetime.fromtimestamp(timestamp, tz=timezone.utc)
+    return datetime.fromtimestamp(timestamp, tz=UTC)
 
 
 def datetime_to_timestamp(dt: datetime) -> int:
@@ -533,7 +533,7 @@ def datetime_to_timestamp(dt: datetime) -> int:
     """
     # If naive, assume it's UTC (though aware objects are preferred).
     if dt.tzinfo is None or dt.tzinfo.utcoffset(dt) is None:
-        dt = dt.replace(tzinfo=timezone.utc)
+        dt = dt.replace(tzinfo=UTC)
     return int(dt.timestamp())
 
 
@@ -549,9 +549,9 @@ def days_between_dates(start_date: datetime, end_date: datetime) -> int:
         Number of days between the dates
     """
     if start_date.tzinfo is None:
-        start_date = start_date.replace(tzinfo=timezone.utc)
+        start_date = start_date.replace(tzinfo=UTC)
     if end_date.tzinfo is None:
-        end_date = end_date.replace(tzinfo=timezone.utc)
+        end_date = end_date.replace(tzinfo=UTC)
 
     delta = end_date - start_date
     return delta.days
@@ -567,7 +567,7 @@ def calculate_days_to_expiry(expiry_date: datetime) -> int:
     Returns:
         Number of days until expiry
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return max(0, days_between_dates(now, expiry_date))
 
 
@@ -598,7 +598,7 @@ def parse_quarterly_futures_symbol(symbol: str) -> datetime | None:
         year = 2000 + yy
 
         # Create datetime object
-        expiry_date = datetime(year, mm, dd, 16, 0, 0, tzinfo=timezone.utc)  # 16:00 UTC is common
+        expiry_date = datetime(year, mm, dd, 16, 0, 0, tzinfo=UTC)  # 16:00 UTC is common
 
         return expiry_date
     except (ValueError, IndexError):
@@ -618,7 +618,7 @@ def get_next_quarterly_expiry(current_date: datetime | None = None) -> datetime:
         Next quarterly expiry date
     """
     if current_date is None:
-        current_date = datetime.now(timezone.utc)
+        current_date = datetime.now(UTC)
 
     year = current_date.year
     month = current_date.month
@@ -646,7 +646,7 @@ def get_next_quarterly_expiry(current_date: datetime | None = None) -> datetime:
         next_month = quarter_month + 1
         next_year = year
 
-    last_day = datetime(next_year, next_month, 1, tzinfo=timezone.utc) - timedelta(days=1)
+    last_day = datetime(next_year, next_month, 1, tzinfo=UTC) - timedelta(days=1)
 
     # Find the last Friday
     weekday = last_day.weekday()
@@ -659,7 +659,7 @@ def get_next_quarterly_expiry(current_date: datetime | None = None) -> datetime:
 
     # Set time to 16:00 UTC (common futures expiry time)
     expiry_date = datetime(
-        last_friday.year, last_friday.month, last_friday.day, 16, 0, 0, tzinfo=timezone.utc
+        last_friday.year, last_friday.month, last_friday.day, 16, 0, 0, tzinfo=UTC
     )
 
     return expiry_date
