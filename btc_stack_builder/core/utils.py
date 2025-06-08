@@ -7,7 +7,7 @@ position PnL calculation, and various Bitcoin/timestamp conversion utilities.
 """
 
 import math
-from datetime import UTC, datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal, getcontext
 
 from scipy.stats import norm
