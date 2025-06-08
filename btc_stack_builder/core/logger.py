@@ -10,8 +10,7 @@ import logging
 import logging.handlers
 import os
 import sys
-
-# import traceback # Removed as it's unused after processor signature changes
+import traceback
 from collections.abc import Callable
 from datetime import datetime
 from functools import wraps
@@ -47,7 +46,7 @@ def ensure_log_directory() -> str:
     Returns:
         Path to the log directory
     """
-    # Fetch LOG_DIR from env var directly to respond to monkeypatching in tests
+    # Fetch LOG_DIR from environment variable directly to respond to monkeypatching in tests
     log_dir_path_str = os.environ.get("BTC_STACK_BUILDER_LOG_DIR", "logs")
     log_dir = Path(log_dir_path_str)
     log_dir.mkdir(parents=True, exist_ok=True)
@@ -118,7 +117,8 @@ def configure_file_handler(log_file: str, level: int = logging.DEBUG) -> logging
     Returns:
         Configured file handler
     """
-    log_dir = ensure_log_directory()  # Ensure log directory exists
+    # Ensure log directory exists
+    log_dir = ensure_log_directory()
     log_path = os.path.join(log_dir, log_file)
 
     # Create rotating file handler
@@ -132,15 +132,13 @@ def configure_file_handler(log_file: str, level: int = logging.DEBUG) -> logging
     return file_handler
 
 
-def add_process_info(
-    logger: logging.Logger, method_name: str, event_dict: dict[str, Any]
-) -> dict[str, Any]:
+def add_process_info(logger: logging.Logger, method_name: str, event_dict: dict[str, Any]) -> dict[str, Any]:
     """
     Add process information to log record.
 
     Args:
-        logger: Logger instance (unused, part of structlog processor signature).
-        method_name: Name of the logging method (e.g., "info", "error").
+        logger: Logger instance (unused, part of structlog processor signature)
+        method_name: Name of the logging method (e.g., "info", "error")
         event_dict: The event dictionary being processed.
 
     Returns:
@@ -151,16 +149,14 @@ def add_process_info(
     return event_dict
 
 
-def add_exception_info(
-    logger: logging.Logger, method_name: str, event_dict: dict[str, Any]
-) -> dict[str, Any]:
+def add_exception_info(logger: logging.Logger, method_name: str, event_dict: dict[str, Any]) -> dict[str, Any]:
     """
-    Add exception info to log record if an exception is being handled.
-    Use *before* structlog.processors.format_exc_info.
+    Add exception information to log record if an exception is being handled.
+    This processor is designed to be used *before* structlog.processors.format_exc_info.
 
     Args:
-        logger: Logger instance (unused).
-        method_name: Name of the logging method.
+        logger: Logger instance (unused)
+        method_name: Name of the logging method
         event_dict: The event dictionary.
 
     Returns:
@@ -169,7 +165,7 @@ def add_exception_info(
     # This custom processor is mostly redundant if using `structlog.processors.format_exc_info`
     # and passing `exc_info=True` to the logger call, as `format_exc_info` handles it.
     # However, if we want specific fields for type/message before the full traceback:
-    if event_dict.get("exc_info"):  # Check if exc_info was passed to the log call
+    if event_dict.get("exc_info"): # Check if exc_info was passed to the log call
         exc_info_tuple = sys.exc_info()
         if exc_info_tuple != (None, None, None):
             exception_type, exception_value, _ = exc_info_tuple
@@ -179,9 +175,7 @@ def add_exception_info(
     return event_dict
 
 
-def add_timestamp(
-    logger: logging.Logger, method_name: str, event_dict: dict[str, Any]
-) -> dict[str, Any]:
+def add_timestamp(logger: logging.Logger, method_name: str, event_dict: dict[str, Any]) -> dict[str, Any]:
     """
     Add ISO-format timestamp to log record.
 
@@ -254,8 +248,7 @@ def setup_logger(name: str = "btc_stack_builder") -> logging.Logger:
     trade_logger_instance = logging.getLogger("btc_stack_builder.trades")
     trade_logger_instance.setLevel(log_level)
     trade_logger_instance.propagate = False
-    # Clear existing handlers for the trade logger to avoid duplication
-    # if setup_logger is called multiple times
+    # Clear existing handlers for the trade logger to avoid duplication if setup_logger is called multiple times
     if trade_logger_instance.handlers:
         trade_logger_instance.handlers.clear()
     trade_logger_instance.addHandler(configure_file_handler(TRADE_LOG_FILE))
@@ -304,9 +297,7 @@ def log_execution_time(logger: logging.Logger | None = None) -> Callable:
 
                 # Log function completion
                 log.debug(
-                    f"Completed {func.__name__}",
-                    execution_time=execution_time,
-                    status="success",
+                    f"Completed {func.__name__}", execution_time=execution_time, status="success"
                 )
 
                 return result

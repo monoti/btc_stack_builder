@@ -6,7 +6,7 @@ including exchange models, portfolio models, strategy models, position models,
 risk models, trade models, and option models.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from typing import Literal
@@ -68,12 +68,10 @@ class Order(BaseModel):
     @model_validator(mode="after")
     def validate_price_for_limit_orders(self) -> "Order":
         """Ensure limit orders have a price."""
-        limit_types = [
-            OrderType.LIMIT,
-            OrderType.STOP_LIMIT,
-            OrderType.TAKE_PROFIT_LIMIT,
-        ]
-        if self.order_type in limit_types and self.price is None:
+        if (
+            self.order_type in [OrderType.LIMIT, OrderType.STOP_LIMIT, OrderType.TAKE_PROFIT_LIMIT]
+            and self.price is None
+        ):
             raise ValueError(f"Price must be specified for {self.order_type} orders")
         return self
 
@@ -208,11 +206,9 @@ class Portfolio(BaseModel):
             extra = actual_types - required_types
             error_msg = []
             if missing:
-                missing_str = f"Missing sub-portfolios: {', '.join(t.value for t in missing)}"
-                error_msg.append(missing_str)
+                error_msg.append(f"Missing sub-portfolios: {', '.join(t.value for t in missing)}")
             if extra:
-                extra_str = f"Extra sub-portfolios: {', '.join(t.value for t in extra)}"
-                error_msg.append(extra_str)
+                error_msg.append(f"Extra sub-portfolios: {', '.join(t.value for t in extra)}")
             raise ValueError(". ".join(error_msg))
 
         return self
@@ -317,11 +313,9 @@ class Strategy(BaseModel):
         }.get(self.type)
 
         if not isinstance(self.config, expected_config_type):
-            err_msg = (
-                f"Strategy type {self.type} requires config of type "
-                f"{expected_config_type.__name__}"
+            raise ValueError(
+                f"Strategy type {self.type} requires config of type {expected_config_type.__name__}"
             )
-            raise ValueError(err_msg)
 
         return self
 
@@ -543,9 +537,7 @@ class Option(BaseModel):
     @property
     def days_to_expiry(self) -> float:
         """Calculate days remaining until expiry."""
-        # Use the same timezone as expiry_date, or assume UTC if naive
-        tz = self.expiry_date.tzinfo or timezone.utc
-        now = datetime.now(tz)
+        now = datetime.now(self.expiry_date.tzinfo)  # Use the same timezone as expiry_date
         if now > self.expiry_date:
             return 0.0
         return (self.expiry_date - now).total_seconds() / 86400

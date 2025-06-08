@@ -6,10 +6,10 @@ which continuously monitors margin ratios and takes action to prevent liquidatio
 """
 
 import asyncio
-from datetime import datetime  # noqa: F401 # Used for type hinting in models
+from datetime import datetime, timezone
 from decimal import Decimal
 from enum import Enum
-from typing import Any  # Optional was removed as unused
+from typing import Any, Optional
 
 from btc_stack_builder.core.constants import (
     MARGIN_CHECK_INTERVAL,
@@ -18,11 +18,11 @@ from btc_stack_builder.core.constants import (
 )
 from btc_stack_builder.core.logger import logger
 from btc_stack_builder.core.models import (
-    # MarginLevel,  # Unused in this file (used by MarginStatus model)
+    MarginLevel,
     MarginStatus,
-    # Position,  # Unused in this file
-    # PositionSide,  # Unused in this file
-    # PositionStatus,  # Unused in this file
+    Position,
+    PositionSide,
+    PositionStatus,
 )
 from btc_stack_builder.gateways import ExchangeGateway
 
@@ -38,13 +38,11 @@ class AlertLevel(str, Enum):
 
 class MarginGuard:
     """
-    MarginGuard monitors exchange margin ratios and takes action
-    to prevent liquidations.
+    MarginGuard monitors exchange margin ratios and takes action to prevent liquidations.
 
-    This is the most critical risk management service. It runs independently
-    and continuously, checking the overall account margin ratio at regular
-    intervals. When the margin ratio falls below warning or critical
-    thresholds, it takes appropriate action:
+    This is the most critical risk management service. It runs independently and continuously,
+    checking the overall account margin ratio at regular intervals. When the margin ratio
+    falls below warning or critical thresholds, it takes appropriate action:
 
     1. WARNING: Send alert
     2. CRITICAL: Send alert and transfer BTC from spot to futures wallet
@@ -216,7 +214,7 @@ class MarginGuard:
             )
         elif level == AlertLevel.WARNING:
             logger.warning(
-                f"WARNING: Low margin ratio for {exchange}: " f"{float(status.margin_ratio):.2f}x",
+                f"WARNING: Low margin ratio for {exchange}: {float(status.margin_ratio):.2f}x",
                 exchange=exchange,
                 margin_ratio=float(status.margin_ratio),
                 wallet_balance=float(status.wallet_balance),
@@ -225,8 +223,7 @@ class MarginGuard:
             )
         elif level == AlertLevel.CRITICAL:
             logger.error(
-                f"CRITICAL: Very low margin ratio for {exchange}: "
-                f"{float(status.margin_ratio):.2f}x",
+                f"CRITICAL: Very low margin ratio for {exchange}: {float(status.margin_ratio):.2f}x",
                 exchange=exchange,
                 margin_ratio=float(status.margin_ratio),
                 wallet_balance=float(status.wallet_balance),
@@ -235,8 +232,7 @@ class MarginGuard:
             )
         elif level == AlertLevel.EMERGENCY:
             logger.critical(
-                f"EMERGENCY: Extreme low margin ratio for {exchange}: "
-                f"{float(status.margin_ratio):.2f}x",
+                f"EMERGENCY: Extreme low margin ratio for {exchange}: {float(status.margin_ratio):.2f}x",
                 exchange=exchange,
                 margin_ratio=float(status.margin_ratio),
                 wallet_balance=float(status.wallet_balance),
@@ -280,7 +276,7 @@ class MarginGuard:
             transfer_amount = transfer_amount.quantize(Decimal("0.000001"))
 
             logger.info(
-                f"Transferring {transfer_amount} BTC from spot to futures " f"for {exchange}",
+                f"Transferring {transfer_amount} BTC from spot to futures for {exchange}",
                 exchange=exchange,
                 amount=str(transfer_amount),
                 current_ratio=float(status.margin_ratio),
@@ -346,7 +342,7 @@ class MarginGuard:
             positions.sort(key=lambda p: p.leverage, reverse=True)
 
             logger.warning(
-                f"EMERGENCY: Unwinding positions for {exchange} due to critical " f"margin ratio",
+                f"EMERGENCY: Unwinding positions for {exchange} due to critical margin ratio",
                 exchange=exchange,
                 margin_ratio=float(status.margin_ratio),
                 positions=len(positions),
@@ -357,11 +353,10 @@ class MarginGuard:
             for position in positions:
                 try:
                     # Close position with market order
-                    order_side = "sell" if position.side == "long" else "buy"
                     await gateway.create_order(
                         symbol=position.symbol,
                         order_type="market",
-                        side=order_side,
+                        side="sell" if position.side == "long" else "buy",
                         amount=position.size,
                     )
 
@@ -377,7 +372,7 @@ class MarginGuard:
                     new_status = await gateway.get_margin_status()
                     if new_status.margin_ratio >= self.warning_threshold:
                         logger.info(
-                            "Margin ratio restored to safe level after unwinding " "some positions",
+                            "Margin ratio restored to safe level after unwinding some positions",
                             exchange=exchange,
                             margin_ratio=float(new_status.margin_ratio),
                         )

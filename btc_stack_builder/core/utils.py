@@ -1,10 +1,9 @@
 """
 Utility functions for BTC Stack-Builder Bot.
 
-This module provides various calculation and conversion functions used
-throughout the application, including basis calculation, funding rate
-calculation, margin ratio calculation, option pricing, position PnL
-calculation, and various Bitcoin/timestamp conversion utilities.
+This module provides various calculation and conversion functions used throughout the application,
+including basis calculation, funding rate calculation, margin ratio calculation, option pricing,
+position PnL calculation, and various Bitcoin/timestamp conversion utilities.
 """
 
 import math
@@ -65,8 +64,7 @@ def calculate_funding_rate(
     Calculate the funding rate for perpetual futures contracts.
 
     The funding rate is typically calculated as:
-    Funding Rate = Premium Index + clamp(Interest Rate - Premium Index,
-                                         -0.05%, 0.05%)
+    Funding Rate = Premium Index + clamp(Interest Rate - Premium Index, -0.05%, 0.05%)
 
     Where Premium Index = (Mark Price - Index Price) / Index Price
 
@@ -74,8 +72,7 @@ def calculate_funding_rate(
         mark_price: Current mark price of the perpetual contract
         index_price: Current index price of the underlying asset
         interest_rate: Current interest rate (default: 0.0)
-        premium_index_weight: Weight of the premium index in the calculation
-                              (default: 1.0)
+        premium_index_weight: Weight of the premium index in the calculation (default: 1.0)
 
     Returns:
         Funding rate as a decimal (e.g., 0.0001 for 0.01%)
@@ -141,15 +138,15 @@ def calculate_option_delta(
     """
     Calculate the delta of an option using the Black-Scholes model.
 
-    Delta represents the rate of change of the option price
-    with respect to changes in the underlying asset's price.
+    Delta represents the rate of change of the option price with respect to changes
+    in the underlying asset's price.
 
     Args:
         spot_price: Current price of the underlying asset
         strike_price: Strike price of the option
         time_to_expiry_years: Time to expiry in years (e.g., 0.25 for 3 months)
-        risk_free_rate: Risk-free interest rate (e.g., 0.02 for 2%)
-        volatility: Implied volatility (e.g., 0.5 for 50%)
+        risk_free_rate: Risk-free interest rate as a decimal (e.g., 0.02 for 2%)
+        volatility: Implied volatility as a decimal (e.g., 0.5 for 50%)
         option_type: Type of option ('call' or 'put')
 
     Returns:
@@ -262,13 +259,11 @@ def calculate_option_greeks(
         )
 
     # Calculate vega (same for calls and puts)
-    # Divided by 100 for 1% change in volatility
-    vega = s * math.sqrt(t) * norm.pdf(d1) / 100
+    vega = s * math.sqrt(t) * norm.pdf(d1) / 100  # Divided by 100 for 1% change in volatility
 
     # Calculate rho
-    # Divided by 100 for 1% change in rate
     if option_type.lower() == "call":
-        rho = k * t * math.exp(-r * t) * norm.cdf(d2) / 100
+        rho = k * t * math.exp(-r * t) * norm.cdf(d2) / 100  # Divided by 100 for 1% change in rate
     else:  # put
         rho = -k * t * math.exp(-r * t) * norm.cdf(-d2) / 100
 
@@ -393,6 +388,7 @@ def calculate_annualized_return(
     # Convert to annualized return
     years_held = Decimal(str(days_held)) / Decimal("365")
     annualized_return = total_return ** (Decimal("1") / years_held) - Decimal("1")
+
     return annualized_return
 
 
@@ -406,13 +402,13 @@ def calculate_rolling_cost(
     Calculate the cost of rolling a futures contract position.
 
     Args:
-        current_contract_price: Price of the current contract.
-        next_contract_price: Price of the next contract.
-        position_size: Size of the position in contracts.
-        fees_percentage: Trading fees as a decimal percentage.
+        current_contract_price: Price of the current contract
+        next_contract_price: Price of the next contract
+        position_size: Size of the position in contracts
+        fees_percentage: Trading fees as a decimal percentage
 
     Returns:
-        Dictionary containing rolling cost information.
+        Dictionary containing rolling cost information
     """
     # Calculate price difference between contracts
     price_diff = next_contract_price - current_contract_price
@@ -452,9 +448,9 @@ def format_btc_amount(amount: Decimal, precision: int = 8, include_symbol: bool 
         # Force '0.00...' format for zero, respecting precision
         formatted_amount = f"{Decimal('0'):.{precision}f}"
     else:
-        # For non-zero, standard formatting should be okay, but let's ensure
-        # it also respects precision correctly for display.
-        # The f-string with ',.{precision}f' gives grouping and fixed decimal places.
+        # For non-zero, standard formatting should be okay,
+        # but let's ensure it also respects precision correctly for display.
+        # The f-string with ',.{precision}f' should give grouping and fixed decimal places.
         formatted_amount = f"{rounded_amount:,.{precision}f}"
 
     # Add BTC symbol if requested
@@ -469,19 +465,18 @@ def format_percentage(percentage: Decimal, precision: int = 2, include_symbol: b
     Format a percentage value with proper precision.
 
     Args:
-        percentage: Percentage value as a decimal (e.g., 0.0567 for 5.67%).
-        precision: Decimal precision to display (default: 2).
-        include_symbol: Whether to include the % symbol (default: True).
+        percentage: Percentage value as a decimal (e.g., 0.0567 for 5.67%)
+        precision: Decimal precision to display (default: 2)
+        include_symbol: Whether to include the % symbol (default: True)
 
     Returns:
-        Formatted percentage string.
+        Formatted percentage string
     """
     # Convert to percentage (multiply by 100)
     percentage_value = percentage * Decimal("100")
 
     # Round to specified precision
-    quantizer = Decimal("0." + "0" * precision)
-    rounded_percentage = percentage_value.quantize(quantizer)
+    rounded_percentage = percentage_value.quantize(Decimal("0." + "0" * precision))
 
     # Format with comma separators for thousands
     formatted_percentage = f"{rounded_percentage:,}"
@@ -530,7 +525,7 @@ def timestamp_to_datetime(timestamp: int | float) -> datetime:
     Returns:
         Equivalent datetime object (UTC)
     """
-    # Convert a Unix timestamp to a datetime object, explicitly making it UTC aware
+    # Convert a Unix timestamp to a datetime object, explicitly making it UTC aware.
     return datetime.fromtimestamp(timestamp, tz=timezone.utc)
 
 
@@ -611,8 +606,7 @@ def parse_quarterly_futures_symbol(symbol: str) -> datetime | None:
         year = 2000 + yy
 
         # Create datetime object
-        # Common expiry time is 16:00 UTC
-        expiry_date = datetime(year, mm, dd, 16, 0, 0, tzinfo=timezone.utc)
+        expiry_date = datetime(year, mm, dd, 16, 0, 0, tzinfo=timezone.utc)  # 16:00 UTC is common
 
         return expiry_date
     except (ValueError, IndexError):
@@ -623,11 +617,10 @@ def get_next_quarterly_expiry(current_date: datetime | None = None) -> datetime:
     """
     Get the next quarterly expiry date.
 
-    Quarterly expiries are typically the last Friday of March, June,
-    September, and December.
+    Quarterly expiries are typically the last Friday of March, June, September, and December.
 
     Args:
-        current_date: Current date (default: today).
+        current_date: Current date (default: today)
 
     Returns:
         Next quarterly expiry date
@@ -672,14 +665,9 @@ def get_next_quarterly_expiry(current_date: datetime | None = None) -> datetime:
 
     last_friday = last_day - timedelta(days=days_to_subtract)
 
-    # Set time to 16:00 UTC (common futures expiry time).
+    # Set time to 16:00 UTC (common futures expiry time)
     expiry_date = datetime(
-        last_friday.year,
-        last_friday.month,
-        last_friday.day,
-        16,
-        0,
-        0,
-        tzinfo=timezone.utc,
+        last_friday.year, last_friday.month, last_friday.day, 16, 0, 0, tzinfo=timezone.utc
     )
+
     return expiry_date

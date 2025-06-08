@@ -11,21 +11,21 @@ risk parameters and operating within its allocated capital portion.
 """
 
 from abc import ABC, abstractmethod
-from datetime import UTC, datetime, timedelta  # Removed: timezone
+from datetime import UTC, datetime, timedelta, timezone
 from decimal import Decimal
-from typing import Any  # Removed: Optional
+from typing import Any, Optional
 
 from btc_stack_builder.core.constants import (
-    # BASIS_ENTRY_THRESHOLD,  # Unused
-    # BASIS_MAX_LEVERAGE,  # Unused
-    BASIS_ROLL_END_DAYS,  # Used in BasisHarvestStrategy logic (indirectly via config)
-    BASIS_ROLL_START_DAYS,  # Used in BasisHarvestStrategy logic (indirectly via config)
-    # FUNDING_ENTRY_THRESHOLD,  # Unused
-    # FUNDING_MAX_LEVERAGE,  # Unused
-    # FUNDING_PROFIT_TARGET,  # Unused
-    # OPTION_DELTA_TARGET,  # Unused
-    # OPTION_MAX_EXPIRY_DAYS,  # Unused
-    # OPTION_MIN_EXPIRY_DAYS,  # Unused
+    BASIS_ENTRY_THRESHOLD,
+    BASIS_MAX_LEVERAGE,
+    BASIS_ROLL_END_DAYS,
+    BASIS_ROLL_START_DAYS,
+    FUNDING_ENTRY_THRESHOLD,
+    FUNDING_MAX_LEVERAGE,
+    FUNDING_PROFIT_TARGET,
+    OPTION_DELTA_TARGET,
+    OPTION_MAX_EXPIRY_DAYS,
+    OPTION_MIN_EXPIRY_DAYS,
 )
 from btc_stack_builder.core.logger import log_strategy_execution, logger
 from btc_stack_builder.core.models import (
@@ -37,22 +37,22 @@ from btc_stack_builder.core.models import (
     OptionType,
     Order,
     OrderSide,
-    # OrderStatus,  # Unused
+    OrderStatus,
     OrderType,
     Position,
     PositionSide,
-    # PositionStatus,  # Unused
-    # Strategy,  # Unused
+    PositionStatus,
+    Strategy,
     StrategyConfig,
-    # StrategyType,  # Unused
+    StrategyType,
     SubPortfolio,
-    # SubPortfolioType,  # Unused
+    SubPortfolioType,
 )
 from btc_stack_builder.core.utils import (
-    # calculate_annualized_basis,  # Unused
-    # calculate_funding_rate,  # Unused
-    # calculate_option_delta,  # Unused
-    # calculate_position_pnl,  # Unused
+    calculate_annualized_basis,
+    calculate_funding_rate,
+    calculate_option_delta,
+    calculate_position_pnl,
     get_next_quarterly_expiry,
     parse_quarterly_futures_symbol,
 )
@@ -63,10 +63,7 @@ class BaseStrategy(ABC):
     """Abstract base class for all trading strategies."""
 
     def __init__(
-        self,
-        gateway: ExchangeGateway,
-        sub_portfolio: SubPortfolio,
-        config: StrategyConfig,
+        self, gateway: ExchangeGateway, sub_portfolio: SubPortfolio, config: StrategyConfig
     ):
         """
         Initialize the strategy.
@@ -294,7 +291,7 @@ class BasisHarvestStrategy(BaseStrategy):
                         logger.info(
                             "Closed Basis Harvest position due to low basis",
                             basis_percentage=f"{float(basis) * 100:.2f}%",
-                            threshold=(f"{float(self.config.entry_threshold) * 100:.2f}%"),
+                            threshold=f"{float(self.config.entry_threshold) * 100:.2f}%",
                         )
                     else:
                         # Basis below threshold but not significantly, hold position
@@ -343,11 +340,10 @@ class BasisHarvestStrategy(BaseStrategy):
         success = True
         for position in self.positions:
             try:
-                order_side = OrderSide.SELL if position.side == PositionSide.LONG else OrderSide.BUY
                 order = await self.gateway.create_order(
                     symbol=position.symbol,
                     order_type=OrderType.MARKET,
-                    side=order_side,
+                    side=OrderSide.SELL if position.side == PositionSide.LONG else OrderSide.BUY,
                     amount=position.size,
                 )
 
@@ -414,11 +410,10 @@ class BasisHarvestStrategy(BaseStrategy):
         try:
             # Close current position
             for position in current_positions:
-                order_side = OrderSide.SELL if position.side == PositionSide.LONG else OrderSide.BUY
                 await self.gateway.create_order(
                     symbol=position.symbol,
                     order_type=OrderType.MARKET,
-                    side=order_side,
+                    side=OrderSide.SELL if position.side == PositionSide.LONG else OrderSide.BUY,
                     amount=position.size,
                 )
 
@@ -702,11 +697,10 @@ class FundingCaptureStrategy(BaseStrategy):
         success = True
         for position in self.positions:
             try:
-                order_side = OrderSide.SELL if position.side == PositionSide.LONG else OrderSide.BUY
                 order = await self.gateway.create_order(
                     symbol=position.symbol,
                     order_type=OrderType.MARKET,
-                    side=order_side,
+                    side=OrderSide.SELL if position.side == PositionSide.LONG else OrderSide.BUY,
                     amount=position.size,
                 )
 
@@ -872,11 +866,9 @@ class OptionPremiumStrategy(BaseStrategy):
             best_option = min(valid_options, key=lambda opt: abs(opt["delta"] - target_delta))
 
             # Calculate position size based on available capital
-            strike_price = best_option["strike_price"]
-            if strike_price > 0:
-                max_contracts = (available_capital / strike_price).quantize(Decimal("0.01"))
-            else:
-                max_contracts = Decimal("0")
+            max_contracts = (available_capital / best_option["strike_price"]).quantize(
+                Decimal("0.01")
+            )
 
             # Sell the put option
             order = await self.gateway.create_order(
@@ -964,11 +956,8 @@ class OptionPremiumStrategy(BaseStrategy):
 
             try:
                 # Buy back the option to close position
-                option_symbol = (
-                    f"BTC-{option.strike_price}-" f"{option.expiry_date.strftime('%d%b%y')}-P"
-                )  # Example format
                 order = await self.gateway.create_order(
-                    symbol=option_symbol,
+                    symbol=f"BTC-{option.strike_price}-{option.expiry_date.strftime('%d%b%y')}-P",  # Example format
                     order_type=OrderType.MARKET,
                     side=OrderSide.BUY,  # Buy to close the short position
                     amount=option.size,
@@ -1076,9 +1065,7 @@ class OptionPremiumStrategy(BaseStrategy):
 
                 # Calculate approximate delta based on strike distance
                 # This is a very simplified approximation
-                delta_val = Decimal("0.5") - ((spot_price - strike) / spot_price)
-                if spot_price == 0:  # Avoid division by zero if spot_price is 0
-                    delta_val = Decimal("0.5")
+                delta_approx = Decimal("0.5") - ((spot_price - strike) / spot_price)
 
                 # Add put option
                 option_chain.append(
@@ -1093,7 +1080,7 @@ class OptionPremiumStrategy(BaseStrategy):
                         "ask": (
                             spot_price * Decimal("0.012") * (Decimal("1") - strike_pct)
                         ).quantize(Decimal("0.0001")),
-                        "delta": delta_val.quantize(Decimal("0.01")),
+                        "delta": delta_approx.quantize(Decimal("0.01")),
                         "implied_vol": Decimal("0.7"),
                     }
                 )
@@ -1125,11 +1112,9 @@ class OptionPremiumStrategy(BaseStrategy):
         # 3. Apply any safety margin
 
         # Simple example: 90% of current balance minus locked collateral
-        open_options_collateral = [
-            o.collateral for o in self.options if o.status == OptionStatus.OPEN
-        ]
-        total_collateral = sum(open_options_collateral)
+        total_collateral = sum(o.collateral for o in self.options if o.status == OptionStatus.OPEN)
         available = (self.sub_portfolio.current_balance_btc * Decimal("0.9")) - total_collateral
+
         return max(Decimal("0"), available)
 
 

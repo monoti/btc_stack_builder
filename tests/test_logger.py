@@ -1,29 +1,25 @@
 import pytest
 import logging
 import json
-
-# import os # Unused
+import os
 import shutil
 from io import StringIO
 from pathlib import Path
-
-# from unittest.mock import MagicMock, patch # Unused
+from unittest.mock import MagicMock, patch
 
 # Module to be tested
 from btc_stack_builder.core.logger import (
     setup_logger,
     ensure_log_directory,
-    # configure_json_formatter, # Unused
-    # get_trade_logger, # Unused
+    configure_json_formatter,
+    get_trade_logger,
     MAIN_LOG_FILE,
-    TRADE_LOG_FILE,
+    TRADE_LOG_FILE
 )
-
 # The global instance `default_app_logger` from logger.py is not directly used in tests,
 # as tests will call setup_logger() for fresh instances.
 
 TEST_LOG_DIR = "test_logs_temp"
-
 
 @pytest.fixture(autouse=True)
 def setup_teardown_test_log_dir(monkeypatch):
@@ -36,7 +32,7 @@ def setup_teardown_test_log_dir(monkeypatch):
     if not log_dir_path.exists():
         log_dir_path.mkdir(parents=True, exist_ok=True)
 
-    yield  # Test runs here
+    yield # Test runs here
 
     # Teardown: Remove the test log directory after all tests in the module are done
     # This is tricky with autouse; a session-scoped fixture might be better for overall cleanup.
@@ -55,11 +51,11 @@ def clean_handlers():
     loggers_to_clear = [
         logging.getLogger("test_logger"),
         logging.getLogger("btc_stack_builder"),
-        logging.getLogger("btc_stack_builder.trades"),
+        logging.getLogger("btc_stack_builder.trades")
     ]
     for log_instance in loggers_to_clear:
-        if hasattr(log_instance, "handlers"):
-            for handler in list(log_instance.handlers):  # Iterate over a copy
+        if hasattr(log_instance, 'handlers'):
+            for handler in list(log_instance.handlers): # Iterate over a copy
                 log_instance.removeHandler(handler)
                 handler.close()
 
@@ -71,7 +67,7 @@ class TestLoggerSetup:
         # Reload the logger module to apply monkeypatched env vars if logger is initialized at import time
         # However, setup_logger is a function, so we call it directly.
 
-        logger = setup_logger()  # Uses default name "btc_stack_builder"
+        logger = setup_logger() # Uses default name "btc_stack_builder"
 
         assert logger.name == "btc_stack_builder"
         assert logger.getEffectiveLevel() == logging.INFO
@@ -91,7 +87,7 @@ class TestLoggerSetup:
 
         assert logger.name == logger_name
         assert logger.getEffectiveLevel() == logging.DEBUG
-        assert len(logger.handlers) == 3  # Console, main file, error file
+        assert len(logger.handlers) == 3 # Console, main file, error file
 
         # Clean up specifically for this logger instance
         for handler in list(logger.handlers):
@@ -106,6 +102,7 @@ class TestLoggerSetup:
         # Remove it if it exists from a previous test to ensure ensure_log_directory creates it
         if log_dir_path.exists():
             shutil.rmtree(log_dir_path)
+
 
         # ensure_log_directory now reads from os.environ directly,
         # which is set by the setup_teardown_test_log_dir fixture's monkeypatch.setenv.
@@ -137,7 +134,6 @@ class TestLogOutput:
         # This ensures it's a structlog BoundLogger.
         # Need to import structlog for this.
         import structlog
-
         structlog_logger_to_capture = structlog.get_logger("capture_logger")
 
         # Its output goes to the stdlib logger with the same name.
@@ -147,9 +143,9 @@ class TestLogOutput:
         # Clear any pre-existing handlers for this specific logger
         # (e.g. if setup_logger was called with "capture_logger" before elsewhere)
         stdlib_logger_for_capture.handlers.clear()
-        stdlib_logger_for_capture.propagate = False  # Avoid duplicate logs from root/parent
+        stdlib_logger_for_capture.propagate = False # Avoid duplicate logs from root/parent
 
-        stdlib_logger_for_capture.setLevel(logging.DEBUG)  # Ensure all messages pass to handler
+        stdlib_logger_for_capture.setLevel(logging.DEBUG) # Ensure all messages pass to handler
 
         test_handler = logging.StreamHandler(log_stream)
         # No formatter on this handler, as structlog's JSONRenderer
@@ -160,7 +156,7 @@ class TestLogOutput:
         # by explicitly configuring it if reset_defaults is too broad.
         # The setup_logger call above should handle this.
 
-        return structlog_logger_to_capture, log_stream  # Return the structlog logger
+        return structlog_logger_to_capture, log_stream # Return the structlog logger
 
     def test_log_message_format_and_content(self, capturing_logger):
         logger, log_stream = capturing_logger
@@ -170,18 +166,16 @@ class TestLogOutput:
         logger.info(test_message, **extra_data)
 
         log_output = log_stream.getvalue()
-        assert log_output  # Check if anything was logged
+        assert log_output # Check if anything was logged
 
         try:
             log_json = json.loads(log_output)
         except json.JSONDecodeError:
             pytest.fail(f"Log output is not valid JSON: {log_output}")
 
-        assert (
-            log_json["event"] == test_message
-        )  # structlog typically uses 'event' for the main message
-        assert log_json["level"] == "info"  # structlog uses lowercase
-        assert log_json["logger"] == "capture_logger"  # from structlog.stdlib.add_logger_name
+        assert log_json["event"] == test_message # structlog typically uses 'event' for the main message
+        assert log_json["level"] == "info" # structlog uses lowercase
+        assert log_json["logger"] == "capture_logger" # from structlog.stdlib.add_logger_name
         assert "timestamp" in log_json
         assert "pid" in log_json
         # Check for the extra data
@@ -195,7 +189,7 @@ class TestLogOutput:
         # The current structlog config uses JSONRenderer directly.
 
     def test_different_log_levels(self, capturing_logger):
-        logger, log_stream = capturing_logger  # Logger is at DEBUG level from fixture
+        logger, log_stream = capturing_logger # Logger is at DEBUG level from fixture
 
         logger.debug("A debug message.")
         logger.info("An info message.")
@@ -204,14 +198,14 @@ class TestLogOutput:
         logger.critical("A critical message.")
 
         log_output = log_stream.getvalue().strip()
-        log_lines = log_output.split("\n")
+        log_lines = log_output.split('\n')
 
-        assert len(log_lines) == 5  # All levels should be logged
+        assert len(log_lines) == 5 # All levels should be logged
 
         log_levels_captured = [json.loads(line)["level"] for line in log_lines]
         assert log_levels_captured == ["debug", "info", "warning", "error", "critical"]
 
-    def test_log_level_filtering(self, monkeypatch):  # Removed clean_handlers
+    def test_log_level_filtering(self, monkeypatch): # Removed clean_handlers
         monkeypatch.setenv("BTC_STACK_BUILDER_LOG_LEVEL", "WARNING")
         log_stream = StringIO()
 
@@ -219,15 +213,14 @@ class TestLogOutput:
         setup_logger(name="temp_config_for_filter_test")
 
         # Get the logger using structlog's API
-        import structlog  # Ensure structlog is imported if not already at top level
-
+        import structlog # Ensure structlog is imported if not already at top level
         logger = structlog.get_logger("filter_logger")
 
         # Configure the underlying stdlib logger for capturing
         stdlib_logger = logging.getLogger("filter_logger")
         stdlib_logger.handlers.clear()
         stdlib_logger.propagate = False
-        stdlib_logger.setLevel(logging.WARNING)  # Set level based on monkeypatch
+        stdlib_logger.setLevel(logging.WARNING) # Set level based on monkeypatch
 
         test_handler = logging.StreamHandler(log_stream)
         stdlib_logger.addHandler(test_handler)
@@ -238,7 +231,7 @@ class TestLogOutput:
         logger.error("This error should appear.")
 
         log_output = log_stream.getvalue().strip()
-        log_lines = log_output.split("\n")
+        log_lines = log_output.split('\n')
 
         assert len(log_lines) == 2
         log_levels_captured = [json.loads(line)["level"] for line in log_lines]
@@ -250,7 +243,7 @@ class TestLogOutput:
         try:
             raise ValueError("This is a test exception.")
         except ValueError:
-            logger.error("Caught an exception", exc_info=True)  # exc_info=True is key for stdlib
+            logger.error("Caught an exception", exc_info=True) # exc_info=True is key for stdlib
             # For structlog, add_exception_info processor should handle it if an exception is active
 
         log_output = log_stream.getvalue()
@@ -260,13 +253,11 @@ class TestLogOutput:
         assert log_json["level"] == "error"
         assert "exception_type" in log_json
         assert log_json["exception_type"] == "ValueError"
-        assert (
-            "This is a test exception." in log_json["exception_message"]
-        )  # if add_exception_info works
+        assert "This is a test exception." in log_json["exception_message"] # if add_exception_info works
         # structlog's format_exc_info processor adds 'exception' field with traceback string
         assert "exception" in log_json
         assert "Traceback (most recent call last):" in log_json["exception"]
-        assert "ValueError: This is a test exception." in log_json["exception"]
+        assert 'ValueError: This is a test exception.' in log_json["exception"]
 
 
 class TestTradeLogger:
@@ -278,23 +269,16 @@ class TestTradeLogger:
         log_dir_path = Path(TEST_LOG_DIR)
         main_log_file = log_dir_path / MAIN_LOG_FILE
         trade_log_file = log_dir_path / TRADE_LOG_FILE
-        if main_log_file.exists():
-            main_log_file.unlink()
-        if trade_log_file.exists():
-            trade_log_file.unlink()
+        if main_log_file.exists(): main_log_file.unlink()
+        if trade_log_file.exists(): trade_log_file.unlink()
 
         # Setup main logger (this also configures structlog globally and sets up handlers for "main_for_trade_test")
         # It also sets up handlers for "btc_stack_builder.trades" via direct getLogger and addHandler.
-        setup_logger(
-            name="main_for_trade_test"
-        )  # Call for its side-effects (handler setup, structlog.configure)
+        setup_logger(name="main_for_trade_test") # Call for its side-effects (handler setup, structlog.configure)
 
         # Get the logger instance using structlog's own API.
-        import structlog  # ensure imported
-
-        main_app_logger = structlog.get_logger(
-            "main_for_trade_test"
-        )  # Explicitly get structlog logger
+        import structlog # ensure imported
+        main_app_logger = structlog.get_logger("main_for_trade_test") # Explicitly get structlog logger
         trade_logger = structlog.get_logger("btc_stack_builder.trades")
 
         trade_message = "This is a trade log message."
@@ -316,12 +300,10 @@ class TestTradeLogger:
 
         # Close handlers for "main_for_trade_test"
         for handler in list(logging.getLogger("main_for_trade_test").handlers):
-            if isinstance(handler, logging.FileHandler):
-                handler.close()
+            if isinstance(handler, logging.FileHandler): handler.close()
         # Close handlers for "btc_stack_builder.trades"
         for handler in list(logging.getLogger("btc_stack_builder.trades").handlers):
-            if isinstance(handler, logging.FileHandler):
-                handler.close()
+            if isinstance(handler, logging.FileHandler): handler.close()
 
         assert trade_log_file.exists(), f"Trade log file {trade_log_file} was not created."
 
@@ -335,7 +317,7 @@ class TestTradeLogger:
         assert inner_trade_log_json["event"] == trade_message
         assert inner_trade_log_json.get("logger_type") == "trade"
         assert inner_trade_log_json.get("source") == "trade_test"
-        assert main_logger_message not in trade_log_content  # Check raw content for absence
+        assert main_logger_message not in trade_log_content # Check raw content for absence
 
         assert main_log_file.exists(), f"Main log file {main_log_file} was not created."
         main_log_content = main_log_file.read_text()
@@ -348,14 +330,11 @@ class TestTradeLogger:
         assert inner_main_log_json["event"] == main_logger_message
         assert inner_main_log_json.get("logger_type") == "main"
         assert inner_main_log_json.get("source") == "main_test"
-        assert trade_message not in main_log_content  # Check raw content for absence
+        assert trade_message not in main_log_content # Check raw content for absence
 
         # Clean up created log files
-        if main_log_file.exists():
-            main_log_file.unlink(missing_ok=True)
-        if trade_log_file.exists():
-            trade_log_file.unlink(missing_ok=True)
-
+        if main_log_file.exists(): main_log_file.unlink(missing_ok=True)
+        if trade_log_file.exists(): trade_log_file.unlink(missing_ok=True)
 
 # TODO: Add tests for decorators if time permits
 # class TestLogDecorators:

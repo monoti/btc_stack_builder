@@ -40,12 +40,9 @@ from btc_stack_builder.strategies.put_wheel import OptionPremiumStrategy
 # Global variables for clean shutdown
 running = True
 gateways: dict[str, ExchangeGateway] = {}
-strategies: dict[StrategyType, Strategy] = {}  # Check if StrategyType is used
+strategies: dict[StrategyType, Strategy] = {}
 task_manager: TaskManager | None = None
 margin_guard: MarginGuard | None = None
-# Module-level 'global' statement removed as it's not standard; globals are implicit.
-# The below comments were too long.
-# For clarity, the global variables are those defined above at module scope.
 
 
 async def initialize_gateways() -> dict[str, ExchangeGateway]:
@@ -60,12 +57,12 @@ async def initialize_gateways() -> dict[str, ExchangeGateway]:
     # Initialize Binance gateway if enabled
     if config.binance.enabled:
         logger.info("Initializing Binance gateway")
-        binance_creds = ExchangeCredentials(
-            api_key=config.binance.credentials.api_key.get_secret_value(),  # type: ignore
-            api_secret=config.binance.credentials.api_secret.get_secret_value(),  # type: ignore
+        binance_credentials = ExchangeCredentials(
+            api_key=config.binance.credentials.api_key.get_secret_value(),
+            api_secret=config.binance.credentials.api_secret.get_secret_value(),
             is_testnet=config.binance.use_testnet,
         )
-        binance_gateway = BinanceGateway(binance_creds, config.binance.use_testnet)  # type: ignore
+        binance_gateway = BinanceGateway(binance_credentials, config.binance.use_testnet)
         await binance_gateway.initialize()
         gateway_map["binance"] = binance_gateway
 
@@ -73,13 +70,11 @@ async def initialize_gateways() -> dict[str, ExchangeGateway]:
     if config.deribit.enabled:
         logger.info("Initializing Deribit gateway")
         deribit_credentials = ExchangeCredentials(
-            api_key=config.deribit.credentials.api_key.get_secret_value(),  # type: ignore
-            api_secret=config.deribit.credentials.api_secret.get_secret_value(),  # type: ignore
+            api_key=config.deribit.credentials.api_key.get_secret_value(),
+            api_secret=config.deribit.credentials.api_secret.get_secret_value(),
             is_testnet=config.deribit.use_testnet,
         )
-        deribit_gateway = DeribitGateway(
-            deribit_credentials, config.deribit.use_testnet  # type: ignore
-        )
+        deribit_gateway = DeribitGateway(deribit_credentials, config.deribit.use_testnet)
         await deribit_gateway.initialize()
         gateway_map["deribit"] = deribit_gateway
 
@@ -280,9 +275,7 @@ async def shutdown() -> None:
     """
     Perform a clean shutdown of all components.
     """
-    global running  # 'running' is assigned to, so 'global' is appropriate here.
-    # For module-level 'gateways', 'strategies', 'task_manager', 'margin_guard',
-    # 'global' is not needed in this function as they are only being read.
+    global running, gateways, strategies, task_manager, margin_guard
 
     logger.info("Shutting down BTC Stack-Builder Bot")
     running = False
@@ -323,8 +316,6 @@ async def main_async(args: argparse.Namespace) -> int:
     Returns:
         Exit code
     """
-    # This function (main_async) assigns to module-level globals,
-    # so 'global' keyword is needed here for them.
     global gateways, strategies, task_manager, margin_guard
 
     try:
@@ -362,7 +353,7 @@ async def main_async(args: argparse.Namespace) -> int:
             start_http_server(args.metrics_port)
 
         logger.info(
-            f"BTC Stack-Builder Bot v{__version__} started in " f"{config.environment.value} mode"
+            f"BTC Stack-Builder Bot v{__version__} started in {config.environment.value} mode"
         )
 
         # Keep the main task running until shutdown
@@ -387,9 +378,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="BTC Stack-Builder Bot")
 
     parser.add_argument(
-        "--version",
-        action="version",
-        version=f"BTC Stack-Builder Bot v{__version__}",
+        "--version", action="version", version=f"BTC Stack-Builder Bot v{__version__}"
     )
 
     parser.add_argument("--config-dir", type=str, help="Path to configuration directory")
@@ -409,9 +398,7 @@ def parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Run in dry-run mode (no actual trades)",
+        "--dry-run", action="store_true", help="Run in dry-run mode (no actual trades)"
     )
 
     parser.add_argument("--no-metrics", action="store_true", help="Disable metrics server")
