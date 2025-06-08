@@ -123,7 +123,7 @@ async def initialize_portfolio() -> Portfolio:
 
     # Create sub-portfolios
     # Ensure SubPortfolioType is iterable
-    sub_portfolio_types = list(SubPortfolioType) if hasattr(SubPortfolioType, '__iter__') else []
+    sub_portfolio_types = list(SubPortfolioType) if hasattr(SubPortfolioType, "__iter__") else []
 
     for sub_type in sub_portfolio_types:
         allocation_percentage = getattr(allocation, sub_type.value)
