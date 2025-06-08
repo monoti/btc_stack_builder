@@ -173,7 +173,7 @@ class TestUtils:
 
     def test_timestamp_to_datetime(self):
         """Test timestamp to datetime conversion."""
-        timestamp = 1654012800  # 2022-05-31 12:00:00 UTC
+        timestamp = 1653998400  # Unix timestamp for 2022-05-31 12:00:00 UTC
         print(f"Input timestamp: {timestamp}")
         dt = timestamp_to_datetime(timestamp)
         print(f"Converted datetime: {repr(dt)}, hour: {dt.hour}, tzinfo: {repr(dt.tzinfo)}")
@@ -189,7 +189,8 @@ class TestUtils:
     def test_datetime_to_timestamp(self):
         """Test datetime to timestamp conversion."""
         dt_input = datetime(2022, 5, 31, 12, 0, 0, tzinfo=UTC)
-        expected_timestamp = 1654012800
+        # Unix timestamp for 2022-05-31 12:00:00 UTC
+        expected_timestamp = 1653998400
         print(f"Input datetime: {repr(dt_input)}")
         calculated_timestamp = datetime_to_timestamp(dt_input)
         print(f"Calculated timestamp: {calculated_timestamp}, Expected: {expected_timestamp}")
