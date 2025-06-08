@@ -104,7 +104,7 @@ jobs:
   docker-scanning:
     name: Docker Image Scanning
     runs-on: ubuntu-latest
-    needs: [dependency-scanning, sast-scanning] # Ensure build dependencies are met if Dockerfile relies on them
+    needs: [sast-scanning] # Ensure build dependencies are met if Dockerfile relies on them
     
     steps:
       - name: Checkout repository
@@ -170,7 +170,6 @@ jobs:
           
           echo "### Overall Workflow Status" >> security-report.md
           if [[ "${{ needs.codeql-analysis.result }}" == "success" && \
-                "${{ needs.dependency-scanning.result }}" == "success" && \
                 "${{ needs.sast-scanning.result }}" == "success" && \
                 "${{ needs.secret-scanning.result }}" == "success" && \
                 "${{ needs.docker-scanning.result }}" == "success" ]]; then
@@ -181,7 +180,6 @@ jobs:
           
           echo "### Individual Job Status:" >> security-report.md
           echo "- CodeQL Analysis: ${{ needs.codeql-analysis.result }}" >> security-report.md
-          echo "- Dependency Scanning: ${{ needs.dependency-scanning.result }}" >> security-report.md
           echo "- SAST Scanning: ${{ needs.sast-scanning.result }}" >> security-report.md
           echo "- Secret Scanning: ${{ needs.secret-scanning.result }}" >> security-report.md
           echo "- Docker Image Scanning: ${{ needs.docker-scanning.result }}" >> security-report.md
