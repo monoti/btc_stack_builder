@@ -14,7 +14,6 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field, model_validator
 
-
 # ======== Exchange Models ========
 
 
