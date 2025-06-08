@@ -8,7 +8,7 @@ This module contains tests for the core components, including:
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 from decimal import Decimal
 
 import pytest
@@ -197,9 +197,7 @@ class TestUtils:
 
         result = calculate_position_pnl(entry_price, current_price, position_size, position_side)
 
-        assert result["absolute_pnl"] == Decimal(
-            "0"
-        ), f"Expected 0, got {result['absolute_pnl']}"
+        assert result["absolute_pnl"] == Decimal("0"), f"Expected 0, got {result['absolute_pnl']}"
         # Percentage PnL is relative to entry price, so it can be non-zero
         assert result["percentage_pnl"] == Decimal(
             "0.1"
@@ -230,7 +228,7 @@ class TestUtils:
         assert dt.hour == 12
         assert dt.minute == 0
         assert dt.second == 0
-        assert dt.tzinfo == timezone.utc
+        assert dt.tzinfo == UTC
 
         # Unix epoch
         epoch_timestamp = 0
@@ -241,32 +239,32 @@ class TestUtils:
         assert epoch_dt.hour == 0
         assert epoch_dt.minute == 0
         assert epoch_dt.second == 0
-        assert epoch_dt.tzinfo == timezone.utc
+        assert epoch_dt.tzinfo == UTC
 
         # Current time (approximate check)
-        current_timestamp = int(datetime.now(timezone.utc).timestamp())
+        current_timestamp = int(datetime.now(UTC).timestamp())
         current_dt = timestamp_to_datetime(current_timestamp)
         assert abs(current_dt.timestamp() - current_timestamp) < 2  # Allow for slight delay
 
     def test_datetime_to_timestamp(self):
         """Test datetime to timestamp conversion."""
         # Standard case
-        dt_input = datetime(2022, 5, 31, 12, 0, 0, tzinfo=timezone.utc)
+        dt_input = datetime(2022, 5, 31, 12, 0, 0, tzinfo=UTC)
         expected_timestamp = 1653998400
         assert datetime_to_timestamp(dt_input) == expected_timestamp
 
         # Unix epoch
-        epoch_dt_input = datetime(1970, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+        epoch_dt_input = datetime(1970, 1, 1, 0, 0, 0, tzinfo=UTC)
         expected_epoch_timestamp = 0
         assert datetime_to_timestamp(epoch_dt_input) == expected_epoch_timestamp
 
         # Current time (naive datetime, should assume UTC)
-        current_dt_naive = datetime.now() # Naive datetime
-        current_dt_aware_utc = datetime.now(timezone.utc) # Aware datetime in UTC
+        current_dt_naive = datetime.now()  # Naive datetime
+        current_dt_aware_utc = datetime.now(UTC)  # Aware datetime in UTC
 
         # When a naive datetime is passed to datetime_to_timestamp, it's assumed to be UTC.
         # So, its timestamp should match an aware datetime that is explicitly UTC.
-        expected_current_timestamp_naive = int(current_dt_naive.replace(tzinfo=timezone.utc).timestamp())
+        expected_current_timestamp_naive = int(current_dt_naive.replace(tzinfo=UTC).timestamp())
         expected_current_timestamp_aware = int(current_dt_aware_utc.timestamp())
 
         assert datetime_to_timestamp(current_dt_naive) == expected_current_timestamp_naive
@@ -274,7 +272,13 @@ class TestUtils:
         assert datetime_to_timestamp(current_dt_aware_utc) == expected_current_timestamp_aware
         # Given the logic, these two should be very close, if not identical.
         # We can assert they are close to account for minimal execution time differences.
-        assert abs(datetime_to_timestamp(current_dt_naive) - datetime_to_timestamp(current_dt_aware_utc)) < 2
+        assert (
+            abs(
+                datetime_to_timestamp(current_dt_naive)
+                - datetime_to_timestamp(current_dt_aware_utc)
+            )
+            < 2
+        )
 
     def test_format_btc_amount(self):
         """Test BTC amount formatting."""
@@ -346,19 +350,19 @@ class TestModels:
             )
 
         # Invalid: individual allocation negative
-        with pytest.raises(ValueError): # Pydantic's Field(ge=0)
+        with pytest.raises(ValueError):  # Pydantic's Field(ge=0)
             PortfolioAllocation(
                 core_hodl=Decimal("-0.1"),
                 basis_harvest=Decimal("0.5"),
                 funding_capture=Decimal("0.3"),
-                option_premium=Decimal("0.3"), # Sum is 1.0 but core_hodl is invalid
+                option_premium=Decimal("0.3"),  # Sum is 1.0 but core_hodl is invalid
             )
 
         # Invalid: individual allocation > 1.0
-        with pytest.raises(ValueError): # Pydantic's Field(le=1)
+        with pytest.raises(ValueError):  # Pydantic's Field(le=1)
             PortfolioAllocation(
                 core_hodl=Decimal("1.1"),
-                basis_harvest=Decimal("-0.1"), # Invalid, but sum is 1.0
+                basis_harvest=Decimal("-0.1"),  # Invalid, but sum is 1.0
                 funding_capture=Decimal("0.0"),
                 option_premium=Decimal("0.0"),
             )
@@ -422,19 +426,33 @@ class TestModels:
         }
 
         # Invalid enum for order_type
-        with pytest.raises(ValueError): # Pydantic ValidationError
+        with pytest.raises(ValueError):  # Pydantic ValidationError
             Order(**common_order_data, order_type="INVALID_TYPE", side=OrderSide.BUY)
 
         # Invalid enum for side
-        with pytest.raises(ValueError): # Pydantic ValidationError
+        with pytest.raises(ValueError):  # Pydantic ValidationError
             Order(**common_order_data, order_type=OrderType.MARKET, side="INVALID_SIDE")
 
         # Invalid amount (negative) - Model currently allows this as no Field(gt=0)
-        order_neg_amount = Order(exchange_id="id", exchange="ex", symbol="sym", order_type=OrderType.MARKET, side=OrderSide.BUY, amount=Decimal("-0.1"))
+        order_neg_amount = Order(
+            exchange_id="id",
+            exchange="ex",
+            symbol="sym",
+            order_type=OrderType.MARKET,
+            side=OrderSide.BUY,
+            amount=Decimal("-0.1"),
+        )
         assert order_neg_amount.amount == Decimal("-0.1")
 
         # Invalid amount (zero) - Model currently allows this
-        order_zero_amount = Order(exchange_id="id", exchange="ex", symbol="sym", order_type=OrderType.MARKET, side=OrderSide.BUY, amount=Decimal("0"))
+        order_zero_amount = Order(
+            exchange_id="id",
+            exchange="ex",
+            symbol="sym",
+            order_type=OrderType.MARKET,
+            side=OrderSide.BUY,
+            amount=Decimal("0"),
+        )
         assert order_zero_amount.amount == Decimal("0")
 
         # Invalid price (negative) for limit order - Model allows this as no Field(gt=0)
@@ -482,7 +500,7 @@ class TestModels:
         strategy_id_for_pos = uuid.uuid4()
         common_position_data = {
             "strategy_id": strategy_id_for_pos,
-            "exchange": "ftx", # :-D
+            "exchange": "ftx",  # :-D
             "symbol": "SOL/USD",
             "current_price": Decimal("40"),
             "size": Decimal("10"),
@@ -491,24 +509,32 @@ class TestModels:
 
         # Invalid entry_price (zero) - Pydantic default allows 0 unless constrained with gt=0
         # Adjusting test to reflect current model behavior (no explicit gt=0 for entry_price)
-        pos_zero_entry = Position(**common_position_data, side=PositionSide.LONG, entry_price=Decimal("0"))
+        pos_zero_entry = Position(
+            **common_position_data, side=PositionSide.LONG, entry_price=Decimal("0")
+        )
         assert pos_zero_entry.entry_price == Decimal("0")
 
         # Invalid entry_price (negative) - Pydantic default allows negative unless constrained with ge=0 or gt=0
-        pos_neg_entry = Position(**common_position_data, side=PositionSide.LONG, entry_price=Decimal("-10"))
+        pos_neg_entry = Position(
+            **common_position_data, side=PositionSide.LONG, entry_price=Decimal("-10")
+        )
         assert pos_neg_entry.entry_price == Decimal("-10")
 
         # Invalid size (zero) - Model allows this if not constrained by Field(gt=0)
         # Correcting the TypeError by ensuring 'size' is not duplicated in kwargs
         pos_zero_size_data = common_position_data.copy()
         pos_zero_size_data["size"] = Decimal("0")
-        pos_zero_size = Position(**pos_zero_size_data, side=PositionSide.LONG, entry_price=Decimal("30"))
+        pos_zero_size = Position(
+            **pos_zero_size_data, side=PositionSide.LONG, entry_price=Decimal("30")
+        )
         assert pos_zero_size.size == Decimal("0")
 
         # Invalid size (negative)
         pos_neg_size_data = common_position_data.copy()
         pos_neg_size_data["size"] = Decimal("-1")
-        pos_neg_size = Position(**pos_neg_size_data, side=PositionSide.LONG, entry_price=Decimal("30"))
+        pos_neg_size = Position(
+            **pos_neg_size_data, side=PositionSide.LONG, entry_price=Decimal("30")
+        )
         assert pos_neg_size.size == Decimal("-1")
 
         # Invalid leverage (zero) - Assuming model should prevent this (e.g. Field(gt=0 or ge=1))
@@ -516,14 +542,18 @@ class TestModels:
         pos_zero_leverage_data = common_position_data.copy()
         pos_zero_leverage_data["leverage"] = Decimal("0")
         # Model allows leverage=0 as no Field constraint prevents it
-        pos_zero_leverage = Position(**pos_zero_leverage_data, side=PositionSide.LONG, entry_price=Decimal("30"))
+        pos_zero_leverage = Position(
+            **pos_zero_leverage_data, side=PositionSide.LONG, entry_price=Decimal("30")
+        )
         assert pos_zero_leverage.leverage == Decimal("0")
 
         # Invalid leverage (negative)
         pos_neg_leverage_data = common_position_data.copy()
         pos_neg_leverage_data["leverage"] = Decimal("-1")
         # Model allows leverage=-1 as no Field constraint prevents it
-        pos_neg_leverage = Position(**pos_neg_leverage_data, side=PositionSide.LONG, entry_price=Decimal("30"))
+        pos_neg_leverage = Position(
+            **pos_neg_leverage_data, side=PositionSide.LONG, entry_price=Decimal("30")
+        )
         assert pos_neg_leverage.leverage == Decimal("-1")
 
         # Test PnL for SHORT position
@@ -534,7 +564,7 @@ class TestModels:
             symbol="BTCUSD_PERP",
             side=PositionSide.SHORT,
             entry_price=Decimal("50000"),
-            current_price=Decimal("55000"), # Price increased
+            current_price=Decimal("55000"),  # Price increased
             size=Decimal("1.0"),
             leverage=Decimal("1.0"),
         )
@@ -548,18 +578,17 @@ class TestModels:
             symbol="BTCUSD_PERP",
             side=PositionSide.SHORT,
             entry_price=Decimal("50000"),
-            current_price=Decimal("45000"), # Price decreased
+            current_price=Decimal("45000"),  # Price decreased
             size=Decimal("1.0"),
             leverage=Decimal("1.0"),
         )
         # PNL % = (Entry - Current) / Entry = (50000 - 45000) / 50000 = 5000 / 50000 = 0.1
         assert short_pos_profit.pnl_percentage == Decimal("0.1")
 
-
     def test_option_model(self):
         """Test Option model validation."""
         # Valid option
-        expiry_date = datetime(2023, 6, 30, 16, 0, 0, tzinfo=timezone.utc)
+        expiry_date = datetime(2023, 6, 30, 16, 0, 0, tzinfo=UTC)
         option = Option(
             strategy_id=str(uuid.uuid4()),
             exchange="deribit",
@@ -586,8 +615,8 @@ class TestModels:
 
         # Common data for option tests
         strategy_id_for_option = uuid.uuid4()
-        future_expiry = datetime.now(timezone.utc) + timedelta(days=30)
-        past_expiry = datetime.now(timezone.utc) - timedelta(days=1)
+        future_expiry = datetime.now(UTC) + timedelta(days=30)
+        past_expiry = datetime.now(UTC) - timedelta(days=1)
 
         common_option_data = {
             "strategy_id": strategy_id_for_option,
@@ -596,42 +625,84 @@ class TestModels:
             "size": Decimal("1"),
             "premium": Decimal("100"),
             "total_premium": Decimal("100"),
-            "collateral": Decimal("0"), # Assuming collateral can be 0 for bought options
+            "collateral": Decimal("0"),  # Assuming collateral can be 0 for bought options
         }
 
         # Invalid strike_price (zero or negative) - Model allows this as no Field(gt=0)
-        opt_zero_strike = Option(**common_option_data, strike_price=Decimal("0"), expiry_date=future_expiry, option_type=OptionType.CALL, side="buy")
+        opt_zero_strike = Option(
+            **common_option_data,
+            strike_price=Decimal("0"),
+            expiry_date=future_expiry,
+            option_type=OptionType.CALL,
+            side="buy",
+        )
         assert opt_zero_strike.strike_price == Decimal("0")
-        opt_neg_strike = Option(**common_option_data, strike_price=Decimal("-50000"), expiry_date=future_expiry, option_type=OptionType.CALL, side="buy")
+        opt_neg_strike = Option(
+            **common_option_data,
+            strike_price=Decimal("-50000"),
+            expiry_date=future_expiry,
+            option_type=OptionType.CALL,
+            side="buy",
+        )
         assert opt_neg_strike.strike_price == Decimal("-50000")
 
         # Invalid size (zero or negative) - Model allows this as no Field(gt=0)
         opt_zero_size_data = common_option_data.copy()
         opt_zero_size_data["size"] = Decimal("0")
-        opt_zero_size = Option(**opt_zero_size_data, strike_price=Decimal("50000"), expiry_date=future_expiry, option_type=OptionType.CALL, side="buy")
+        opt_zero_size = Option(
+            **opt_zero_size_data,
+            strike_price=Decimal("50000"),
+            expiry_date=future_expiry,
+            option_type=OptionType.CALL,
+            side="buy",
+        )
         assert opt_zero_size.size == Decimal("0")
 
         opt_neg_size_data = common_option_data.copy()
         opt_neg_size_data["size"] = Decimal("-1")
-        opt_neg_size = Option(**opt_neg_size_data, strike_price=Decimal("50000"), expiry_date=future_expiry, option_type=OptionType.CALL, side="buy")
+        opt_neg_size = Option(
+            **opt_neg_size_data,
+            strike_price=Decimal("50000"),
+            expiry_date=future_expiry,
+            option_type=OptionType.CALL,
+            side="buy",
+        )
         assert opt_neg_size.size == Decimal("-1")
 
         # Invalid premium (negative) - Model allows this as no Field(ge=0)
         opt_neg_premium_data = common_option_data.copy()
         opt_neg_premium_data["premium"] = Decimal("-10")
-        opt_neg_premium = Option(**opt_neg_premium_data, strike_price=Decimal("50000"), expiry_date=future_expiry, option_type=OptionType.CALL, side="buy")
+        opt_neg_premium = Option(
+            **opt_neg_premium_data,
+            strike_price=Decimal("50000"),
+            expiry_date=future_expiry,
+            option_type=OptionType.CALL,
+            side="buy",
+        )
         assert opt_neg_premium.premium == Decimal("-10")
 
         # Invalid total_premium (negative) - Model allows this as no Field(ge=0)
         opt_neg_total_premium_data = common_option_data.copy()
         opt_neg_total_premium_data["total_premium"] = Decimal("-100")
-        opt_neg_total_premium = Option(**opt_neg_total_premium_data, strike_price=Decimal("50000"), expiry_date=future_expiry, option_type=OptionType.CALL, side="buy")
+        opt_neg_total_premium = Option(
+            **opt_neg_total_premium_data,
+            strike_price=Decimal("50000"),
+            expiry_date=future_expiry,
+            option_type=OptionType.CALL,
+            side="buy",
+        )
         assert opt_neg_total_premium.total_premium == Decimal("-100")
 
         # Invalid collateral (negative) - Model allows this as no Field(ge=0) constraint
         opt_neg_collateral_data = common_option_data.copy()
         opt_neg_collateral_data["collateral"] = Decimal("-0.01")
-        opt_neg_collateral = Option(**opt_neg_collateral_data, strike_price=Decimal("50000"), expiry_date=future_expiry, option_type=OptionType.PUT, side="sell")
+        opt_neg_collateral = Option(
+            **opt_neg_collateral_data,
+            strike_price=Decimal("50000"),
+            expiry_date=future_expiry,
+            option_type=OptionType.PUT,
+            side="sell",
+        )
         assert opt_neg_collateral.collateral == Decimal("-0.01")
 
         # Expiry date in the past - this is not inherently invalid by Pydantic, but days_to_expiry should be 0
@@ -640,17 +711,29 @@ class TestModels:
             strike_price=Decimal("50000"),
             expiry_date=past_expiry,
             option_type=OptionType.CALL,
-            side="buy"
+            side="buy",
         )
         assert past_option.days_to_expiry == 0.0
 
         # Invalid enum for option_type
-        with pytest.raises(ValueError): # Pydantic ValidationError
-            Option(**common_option_data, strike_price=Decimal("50000"), expiry_date=future_expiry, option_type="INVALID_OPTION_TYPE", side="buy")
+        with pytest.raises(ValueError):  # Pydantic ValidationError
+            Option(
+                **common_option_data,
+                strike_price=Decimal("50000"),
+                expiry_date=future_expiry,
+                option_type="INVALID_OPTION_TYPE",
+                side="buy",
+            )
 
         # Invalid enum for side (model uses Literal["buy", "sell"])
-        with pytest.raises(ValueError): # Pydantic ValidationError
-            Option(**common_option_data, strike_price=Decimal("50000"), expiry_date=future_expiry, option_type=OptionType.CALL, side="INVALID_SIDE")
+        with pytest.raises(ValueError):  # Pydantic ValidationError
+            Option(
+                **common_option_data,
+                strike_price=Decimal("50000"),
+                expiry_date=future_expiry,
+                option_type=OptionType.CALL,
+                side="INVALID_SIDE",
+            )
 
 
 if __name__ == "__main__":

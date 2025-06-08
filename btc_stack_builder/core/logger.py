@@ -132,7 +132,9 @@ def configure_file_handler(log_file: str, level: int = logging.DEBUG) -> logging
     return file_handler
 
 
-def add_process_info(logger: logging.Logger, method_name: str, event_dict: dict[str, Any]) -> dict[str, Any]:
+def add_process_info(
+    logger: logging.Logger, method_name: str, event_dict: dict[str, Any]
+) -> dict[str, Any]:
     """
     Add process information to log record.
 
@@ -149,7 +151,9 @@ def add_process_info(logger: logging.Logger, method_name: str, event_dict: dict[
     return event_dict
 
 
-def add_exception_info(logger: logging.Logger, method_name: str, event_dict: dict[str, Any]) -> dict[str, Any]:
+def add_exception_info(
+    logger: logging.Logger, method_name: str, event_dict: dict[str, Any]
+) -> dict[str, Any]:
     """
     Add exception information to log record if an exception is being handled.
     This processor is designed to be used *before* structlog.processors.format_exc_info.
@@ -165,7 +169,7 @@ def add_exception_info(logger: logging.Logger, method_name: str, event_dict: dic
     # This custom processor is mostly redundant if using `structlog.processors.format_exc_info`
     # and passing `exc_info=True` to the logger call, as `format_exc_info` handles it.
     # However, if we want specific fields for type/message before the full traceback:
-    if event_dict.get("exc_info"): # Check if exc_info was passed to the log call
+    if event_dict.get("exc_info"):  # Check if exc_info was passed to the log call
         exc_info_tuple = sys.exc_info()
         if exc_info_tuple != (None, None, None):
             exception_type, exception_value, _ = exc_info_tuple
@@ -175,7 +179,9 @@ def add_exception_info(logger: logging.Logger, method_name: str, event_dict: dic
     return event_dict
 
 
-def add_timestamp(logger: logging.Logger, method_name: str, event_dict: dict[str, Any]) -> dict[str, Any]:
+def add_timestamp(
+    logger: logging.Logger, method_name: str, event_dict: dict[str, Any]
+) -> dict[str, Any]:
     """
     Add ISO-format timestamp to log record.
 
