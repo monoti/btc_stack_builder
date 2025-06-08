@@ -7,6 +7,7 @@ This module contains tests for the core components, including:
 - Data models and validation
 """
 
+import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
 
@@ -100,7 +101,9 @@ class TestUtils:
         spot_price = Decimal("50000")
         days_to_expiry = 90
 
-        expected_basis = Decimal("0.2")  # 20% annualized
+        expected_basis = (Decimal("52500") / Decimal("50000") - 1) * (
+            Decimal("365") / Decimal("90")
+        )
         calculated_basis = calculate_annualized_basis(futures_price, spot_price, days_to_expiry)
 
         assert abs(calculated_basis - expected_basis) < Decimal(
@@ -171,24 +174,28 @@ class TestUtils:
     def test_timestamp_to_datetime(self):
         """Test timestamp to datetime conversion."""
         timestamp = 1654012800  # 2022-05-31 12:00:00 UTC
+        print(f"Input timestamp: {timestamp}")
         dt = timestamp_to_datetime(timestamp)
-
+        print(f"Converted datetime: {repr(dt)}, hour: {dt.hour}, tzinfo: {repr(dt.tzinfo)}")
+        # Assertions as before:
         assert dt.year == 2022
         assert dt.month == 5
         assert dt.day == 31
-        assert dt.hour == 12
+        assert dt.hour == 12, f"Hour was {dt.hour}, expected 12. Full datetime: {repr(dt)}"
         assert dt.minute == 0
         assert dt.second == 0
-        assert dt.tzinfo == UTC
+        assert dt.tzinfo == UTC, f"tzinfo was {repr(dt.tzinfo)}, expected {repr(UTC)}"
 
     def test_datetime_to_timestamp(self):
         """Test datetime to timestamp conversion."""
-        dt = datetime(2022, 5, 31, 12, 0, 0, tzinfo=UTC)
+        dt_input = datetime(2022, 5, 31, 12, 0, 0, tzinfo=UTC)
         expected_timestamp = 1654012800
-
+        print(f"Input datetime: {repr(dt_input)}")
+        calculated_timestamp = datetime_to_timestamp(dt_input)
+        print(f"Calculated timestamp: {calculated_timestamp}, Expected: {expected_timestamp}")
         assert (
-            datetime_to_timestamp(dt) == expected_timestamp
-        ), f"Expected {expected_timestamp}, got {datetime_to_timestamp(dt)}"
+            calculated_timestamp == expected_timestamp
+        ), f"Expected {expected_timestamp}, got {calculated_timestamp}. Input datetime was {repr(dt_input)}"
 
     def test_format_btc_amount(self):
         """Test BTC amount formatting."""
@@ -285,7 +292,7 @@ class TestModels:
         """Test Position model validation."""
         # Valid position
         position = Position(
-            strategy_id="123",
+            strategy_id=str(uuid.uuid4()),
             exchange="binance",
             symbol="BTCUSD_PERP",
             side=PositionSide.LONG,
@@ -309,7 +316,7 @@ class TestModels:
         # Valid option
         expiry_date = datetime(2023, 6, 30, 16, 0, 0, tzinfo=UTC)
         option = Option(
-            strategy_id="123",
+            strategy_id=str(uuid.uuid4()),
             exchange="deribit",
             underlying="BTC",
             strike_price=Decimal("50000"),

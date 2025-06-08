@@ -517,6 +517,7 @@ def timestamp_to_datetime(timestamp: int | float) -> datetime:
     Returns:
         Equivalent datetime object (UTC)
     """
+    # Convert a Unix timestamp to a datetime object, explicitly making it UTC aware.
     return datetime.fromtimestamp(timestamp, tz=UTC)
 
 
@@ -530,10 +531,9 @@ def datetime_to_timestamp(dt: datetime) -> int:
     Returns:
         Equivalent Unix timestamp (seconds since epoch)
     """
-    if dt.tzinfo is None:
-        # Assume UTC if no timezone is specified
+    # If naive, assume it's UTC (though aware objects are preferred).
+    if dt.tzinfo is None or dt.tzinfo.utcoffset(dt) is None:
         dt = dt.replace(tzinfo=UTC)
-
     return int(dt.timestamp())
 
 

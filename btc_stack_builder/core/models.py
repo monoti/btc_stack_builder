@@ -537,9 +537,9 @@ class Option(BaseModel):
     @property
     def days_to_expiry(self) -> float:
         """Calculate days remaining until expiry."""
-        now = datetime.utcnow()
+        now = datetime.now(self.expiry_date.tzinfo)  # Use the same timezone as expiry_date
         if now > self.expiry_date:
-            return 0
+            return 0.0
         return (self.expiry_date - now).total_seconds() / 86400
 
     @property
