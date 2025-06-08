@@ -1,8 +1,8 @@
 # Exchange API Libraries
-ccxt==3.1.52  # Free version instead of ccxt-pro
-websocket-client==1.6.1
-requests==2.31.0
-aiohttp==3.9.1  # Using version with prebuilt wheels
+ccxt==4.4.88  # Free version instead of ccxt-pro
+websocket-client==1.8.0
+requests==2.32.3
+aiohttp==3.12.11  # Using version with prebuilt wheels
 aiodns==3.1.1  # For faster DNS resolution with aiohttp
 
 # Data Models and Validation
@@ -10,19 +10,19 @@ pydantic==2.11.5
 pydantic-settings==2.9.1
 
 # Database
-sqlalchemy==2.0.23
-psycopg2-binary==2.9.9
+sqlalchemy==2.0.41
+psycopg2-binary==2.9.10
 alembic==1.12.1
 redis==5.0.1
 
 # Task Scheduling and Queue
-apscheduler==3.10.4
-celery==5.3.4
+apscheduler==3.11.0
+celery==5.5.3
 flower==2.0.1  # Celery monitoring
 
 # Cryptography and Security
-cryptography==41.0.5
-python-dotenv==1.0.0
+cryptography==45.0.3
+python-dotenv==1.1.0
 
 # Monitoring and Metrics
 prometheus-client==0.17.1
