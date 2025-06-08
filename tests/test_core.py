@@ -101,7 +101,9 @@ class TestUtils:
         spot_price = Decimal("50000")
         days_to_expiry = 90
 
-        expected_basis = (Decimal("52500") / Decimal("50000") - 1) * (Decimal("365") / Decimal("90"))
+        expected_basis = (Decimal("52500") / Decimal("50000") - 1) * (
+            Decimal("365") / Decimal("90")
+        )
         calculated_basis = calculate_annualized_basis(futures_price, spot_price, days_to_expiry)
 
         assert abs(calculated_basis - expected_basis) < Decimal(
@@ -191,8 +193,9 @@ class TestUtils:
         print(f"Input datetime: {repr(dt_input)}")
         calculated_timestamp = datetime_to_timestamp(dt_input)
         print(f"Calculated timestamp: {calculated_timestamp}, Expected: {expected_timestamp}")
-        assert calculated_timestamp == expected_timestamp, \
-            f"Expected {expected_timestamp}, got {calculated_timestamp}. Input datetime was {repr(dt_input)}"
+        assert (
+            calculated_timestamp == expected_timestamp
+        ), f"Expected {expected_timestamp}, got {calculated_timestamp}. Input datetime was {repr(dt_input)}"
 
     def test_format_btc_amount(self):
         """Test BTC amount formatting."""
