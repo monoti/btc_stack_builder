@@ -73,9 +73,14 @@ jobs:
           category: bandit
       
       - name: Run Semgrep
-        uses: semgrep/semgrep-action@v1
+        run: semgrep ci --sarif --output semgrep-results.sarif --config "p/python"
+
+      - name: Upload Semgrep results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
         with:
-          config: p/python
+          sarif_file: semgrep-results.sarif
+          category: semgrep
 
   secret-scanning:
     name: Secret Scanning
@@ -110,18 +115,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       
-      - name: Build Docker image
+      - name: Build and load Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
           push: false # Do not push the image, just build for scanning
+          load: true # Load the image into the local Docker daemon
           tags: btc-stack-builder-scan:${{ github.sha }}
-          outputs: type=docker,dest=/tmp/btc-stack-builder.tar
       
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.28.0
         with:
-          input: /tmp/btc-stack-builder.tar
+          image-ref: 'btc-stack-builder-scan:${{ github.sha }}'
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
@@ -135,7 +140,7 @@ jobs:
           category: trivy
       
       - name: Run Dockle
-        uses: goodwithtech/dockle-action@v1
+        uses: goodwithtech/dockle-action@v0.4.15
         with:
           image: btc-stack-builder-scan:${{ github.sha }}
           format: sarif
@@ -154,7 +159,7 @@ jobs:
     name: Security Report
     runs-on: ubuntu-latest
     needs: [codeql-analysis, sast-scanning, secret-scanning, docker-scanning]
-    if: always() # Run this job even if previous jobs fail
+    if: always()
     
     steps:
       - name: Checkout repository
@@ -187,7 +192,7 @@ jobs:
           echo "### Next Steps:" >> security-report.md
           echo "1. Review detailed results in the GitHub Security tab for this workflow run." >> security-report.md
           echo "2. Address any critical or high severity findings reported by the tools." >> security-report.md
-          echo "3. Update dependencies with known vulnerabilities if identified by Safety or pip-audit." >> security-report.md
+          echo "3. Update dependencies with known vulnerabilities if identified." >> security-report.md
       
       - name: Upload Security Report
         uses: actions/upload-artifact@v4
