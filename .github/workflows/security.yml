@@ -100,7 +100,7 @@ jobs:
         run: |
           bandit \
             -r btc_stack_builder \
-            --exclude tests \
+            -x btc_stack_builder/tests \
             -f json \
             -o bandit-results.json
       
