@@ -40,6 +40,10 @@ jobs:
   sast-scanning:
     name: SAST Scanning
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
     
     steps:
       - name: Checkout repository
@@ -85,6 +89,10 @@ jobs:
   secret-scanning:
     name: Secret Scanning
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
     
     steps:
       - name: Checkout repository
@@ -110,6 +118,10 @@ jobs:
     name: Docker Image Scanning
     runs-on: ubuntu-latest
     needs: [sast-scanning] # Ensure build dependencies are met if Dockerfile relies on them
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
     
     steps:
       - name: Checkout repository
