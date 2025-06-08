@@ -115,18 +115,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       
-      - name: Build Docker image
+      - name: Build and load Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
           push: false # Do not push the image, just build for scanning
+          load: true # Load the image into the local Docker daemon
           tags: btc-stack-builder-scan:${{ github.sha }}
-          outputs: type=docker,dest=/tmp/btc-stack-builder.tar
       
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.28.0
         with:
-          input: /tmp/btc-stack-builder.tar
+          image_ref: 'btc-stack-builder-scan:${{ github.sha }}'
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
