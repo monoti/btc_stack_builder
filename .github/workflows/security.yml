@@ -126,7 +126,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.28.0
         with:
-          image_ref: 'btc-stack-builder-scan:${{ github.sha }}'
+          image-ref: 'btc-stack-builder-scan:${{ github.sha }}'
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
