@@ -8,7 +8,7 @@ This module contains tests for the core components, including:
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import pytest
@@ -228,7 +228,7 @@ class TestUtils:
         assert dt.hour == 12
         assert dt.minute == 0
         assert dt.second == 0
-        assert dt.tzinfo == timezone.utc
+        assert dt.tzinfo == UTC
 
         # Unix epoch
         epoch_timestamp = 0
@@ -239,34 +239,32 @@ class TestUtils:
         assert epoch_dt.hour == 0
         assert epoch_dt.minute == 0
         assert epoch_dt.second == 0
-        assert epoch_dt.tzinfo == timezone.utc
+        assert epoch_dt.tzinfo == UTC
 
         # Current time (approximate check)
-        current_timestamp = int(datetime.now(timezone.utc).timestamp())
+        current_timestamp = int(datetime.now(UTC).timestamp())
         current_dt = timestamp_to_datetime(current_timestamp)
         assert abs(current_dt.timestamp() - current_timestamp) < 2  # Allow for slight delay
 
     def test_datetime_to_timestamp(self):
         """Test datetime to timestamp conversion."""
         # Standard case
-        dt_input = datetime(2022, 5, 31, 12, 0, 0, tzinfo=timezone.utc)
+        dt_input = datetime(2022, 5, 31, 12, 0, 0, tzinfo=UTC)
         expected_timestamp = 1653998400
         assert datetime_to_timestamp(dt_input) == expected_timestamp
 
         # Unix epoch
-        epoch_dt_input = datetime(1970, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+        epoch_dt_input = datetime(1970, 1, 1, 0, 0, 0, tzinfo=UTC)
         expected_epoch_timestamp = 0
         assert datetime_to_timestamp(epoch_dt_input) == expected_epoch_timestamp
 
         # Current time (naive datetime, should assume UTC)
         current_dt_naive = datetime.now()  # Naive datetime
-        current_dt_aware_utc = datetime.now(timezone.utc)  # Aware datetime in UTC
+        current_dt_aware_utc = datetime.now(UTC)  # Aware datetime in UTC
 
         # When a naive datetime is passed to datetime_to_timestamp, it's assumed to be UTC.
         # So, its timestamp should match an aware datetime that is explicitly UTC.
-        expected_current_timestamp_naive = int(
-            current_dt_naive.replace(tzinfo=timezone.utc).timestamp()
-        )
+        expected_current_timestamp_naive = int(current_dt_naive.replace(tzinfo=UTC).timestamp())
         expected_current_timestamp_aware = int(current_dt_aware_utc.timestamp())
 
         assert datetime_to_timestamp(current_dt_naive) == expected_current_timestamp_naive
@@ -589,7 +587,7 @@ class TestModels:
     def test_option_model(self):
         """Test Option model validation."""
         # Valid option
-        expiry_date = datetime(2023, 6, 30, 16, 0, 0, tzinfo=timezone.utc)
+        expiry_date = datetime(2023, 6, 30, 16, 0, 0, tzinfo=UTC)
         option = Option(
             strategy_id=str(uuid.uuid4()),
             exchange="deribit",
@@ -616,8 +614,8 @@ class TestModels:
 
         # Common data for option tests
         strategy_id_for_option = uuid.uuid4()
-        future_expiry = datetime.now(timezone.utc) + timedelta(days=30)
-        past_expiry = datetime.now(timezone.utc) - timedelta(days=1)
+        future_expiry = datetime.now(UTC) + timedelta(days=30)
+        past_expiry = datetime.now(UTC) - timedelta(days=1)
 
         common_option_data = {
             "strategy_id": strategy_id_for_option,

@@ -1,22 +1,18 @@
-import pytest
-import logging
 import json
+import logging
 
-# import os # Unused
 import shutil
 from io import StringIO
 from pathlib import Path
 
-# from unittest.mock import MagicMock, patch # Unused
+import pytest
 
 # Module to be tested
 from btc_stack_builder.core.logger import (
-    setup_logger,
-    ensure_log_directory,
-    # configure_json_formatter, # Unused
-    # get_trade_logger, # Unused
     MAIN_LOG_FILE,
     TRADE_LOG_FILE,
+    ensure_log_directory,
+    setup_logger,
 )
 
 # The global instance `default_app_logger` from logger.py is not directly used in tests,

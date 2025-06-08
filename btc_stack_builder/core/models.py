@@ -6,13 +6,14 @@ including exchange models, portfolio models, strategy models, position models,
 risk models, trade models, and option models.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from enum import Enum
 from typing import Literal
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field, model_validator
+
 
 # ======== Exchange Models ========
 
@@ -544,7 +545,7 @@ class Option(BaseModel):
     def days_to_expiry(self) -> float:
         """Calculate days remaining until expiry."""
         # Use the same timezone as expiry_date, or assume UTC if naive
-        tz = self.expiry_date.tzinfo or timezone.utc
+        tz = self.expiry_date.tzinfo or UTC
         now = datetime.now(tz)
         if now > self.expiry_date:
             return 0.0
