@@ -8,7 +8,7 @@ This module contains tests for the core components, including:
 """
 
 import uuid
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 
 import pytest
