@@ -17,14 +17,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Create and set working directory
 WORKDIR /app
 
-# Copy requirements file
-COPY requirements.txt .
+# Copy project and application files
+COPY pyproject.toml .
+COPY README.md .
+COPY btc_stack_builder ./btc_stack_builder
 
-# Install build dependencies first, then other dependencies into a virtual environment
+# Install dependencies into a virtual environment using pyproject.toml
 RUN python -m venv /venv && \
-    /venv/bin/pip install --upgrade pip && \
-    /venv/bin/pip install setuptools wheel && \
-    /venv/bin/pip install -r requirements.txt
+    /venv/bin/pip install --upgrade pip setuptools wheel && \
+    /venv/bin/pip install .[dev]
 
 # Second stage: runtime image
 FROM python:3.13-slim
