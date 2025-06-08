@@ -54,11 +54,23 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install safety pip-audit
+          pip install safety sarif-ctf pip-audit
           pip install -r requirements.txt
       
       - name: Scan dependencies with Safety
-        run: safety check -r requirements.txt --sarif -o safety-results.sarif || true
+        run: |
+          safety check \
+            -r requirements.txt \
+            --full-report \
+            --output json \
+            > safety-results.json || true
+
+      - name: Convert Safety JSON to SARIF
+        run: |
+          sarif-ctf convert \
+            --type safety \
+            safety-results.json \
+            --output safety-results.sarif
       
       - name: Upload Safety results
         uses: github/codeql-action/upload-sarif@v3
@@ -68,7 +80,11 @@ jobs:
           category: safety
 
       - name: Scan dependencies with pip-audit
-        run: pip-audit --format sarif --output-file pip-audit-results.sarif --fail-on-vuln || true
+        run: |
+          pip-audit \
+            --format sarif \
+            --output-file pip-audit-results.sarif \
+            --fail-on-vuln || true
 
       - name: Upload pip-audit results
         uses: github/codeql-action/upload-sarif@v3
