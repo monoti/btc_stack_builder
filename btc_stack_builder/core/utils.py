@@ -7,10 +7,10 @@ calculation, margin ratio calculation, option pricing, position PnL
 calculation, and various Bitcoin/timestamp conversion utilities.
 """
 
-import math
 from datetime import UTC, datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal, getcontext
 
+import math
 from scipy.stats import norm
 
 # Set decimal precision for financial calculations
