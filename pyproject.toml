@@ -42,7 +42,7 @@ dependencies = [
     "python-telegram-bot==20.6",
     "pytz==2023.3.post1",
     "pyyaml==6.0.2",
-    "redis==5.0.1",
+    "redis==6.2.0",
     "requests==2.32.3",
     "scipy==1.15.3",
     "sqlalchemy==2.0.41",
