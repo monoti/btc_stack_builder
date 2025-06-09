@@ -40,7 +40,7 @@ dependencies = [
     "python-dotenv==1.1.0",
     "python-json-logger==3.3.0",
     "python-telegram-bot==20.6",
-    "pytz==2023.3.post1",
+    "pytz==2025.2",
     "pyyaml==6.0.2",
     "redis==5.0.1",
     "requests==2.32.3",
