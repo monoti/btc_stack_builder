@@ -23,7 +23,7 @@ classifiers = [
 dependencies = [
     "aiohttp==3.12.11",
     "aiodns==3.1.1",
-    "alembic==1.12.1",
+    "alembic==1.16.1",
     "apscheduler==3.11.0",
     "ccxt>=2.0.0",
     "celery==5.5.3",
