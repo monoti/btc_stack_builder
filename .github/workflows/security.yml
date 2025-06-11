@@ -184,9 +184,24 @@ jobs:
           exit-code: '1' # Fail if issues found
           exit-level: 'WARN' # Exit on warnings or higher
       
+      - name: Verify Dockle Output File
+        id: verify_dockle_output # Added id here
+        if: always() # Run this verification regardless of Dockle's outcome
+        run: |
+          if [ -f "dockle-results.sarif" ]; then
+            echo "Dockle SARIF file found."
+            ls -lh dockle-results.sarif
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Dockle SARIF file NOT found."
+            echo "exists=false" >> $GITHUB_OUTPUT
+            # Consider if this script should exit 1 if file not found
+            # For now, it allows workflow to proceed and upload steps to be skipped based on output
+          fi
+
       - name: Upload Dockle SARIF for aggregation
         uses: actions/upload-artifact@v4
-        if: always()
+        if: steps.verify_dockle_output.outputs.exists == 'true' # Modified condition
         with:
           name: dockle-sarif
           path: dockle-results.sarif
@@ -194,7 +209,7 @@ jobs:
 
       - name: Upload Dockle scan results
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: steps.verify_dockle_output.outputs.exists == 'true' # Modified condition
         with:
           sarif_file: dockle-results.sarif
           category: dockle
