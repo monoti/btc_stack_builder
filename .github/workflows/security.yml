@@ -69,9 +69,22 @@ jobs:
             -o bandit-results.sarif \
             --exit-zero
       
+      - name: Verify Bandit Output File
+        id: verify_bandit_output
+        if: always()
+        run: |
+          if [ -f "bandit-results.sarif" ]; then
+            echo "Bandit SARIF file found."
+            ls -lh bandit-results.sarif
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Bandit SARIF file NOT found."
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Upload Bandit SARIF
         uses: actions/upload-artifact@v4
-        if: always()
+        if: steps.verify_bandit_output.outputs.exists == 'true' # Modified condition
         with:
           name: bandit-sarif
           path: bandit-results.sarif
@@ -79,7 +92,7 @@ jobs:
 
       - name: Upload Bandit results
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: steps.verify_bandit_output.outputs.exists == 'true' # Modified condition
         with:
           sarif_file: bandit-results.sarif
           category: bandit
@@ -87,9 +100,22 @@ jobs:
       - name: Run Semgrep
         run: semgrep ci --sarif --output semgrep-results.sarif --config "p/python"
 
+      - name: Verify Semgrep Output File
+        id: verify_semgrep_output
+        if: always()
+        run: |
+          if [ -f "semgrep-results.sarif" ]; then
+            echo "Semgrep SARIF file found."
+            ls -lh semgrep-results.sarif
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Semgrep SARIF file NOT found."
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Upload Semgrep SARIF
         uses: actions/upload-artifact@v4
-        if: always()
+        if: steps.verify_semgrep_output.outputs.exists == 'true' # Modified condition
         with:
           name: semgrep-sarif
           path: semgrep-results.sarif
@@ -97,7 +123,7 @@ jobs:
 
       - name: Upload Semgrep results
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: steps.verify_semgrep_output.outputs.exists == 'true' # Modified condition
         with:
           sarif_file: semgrep-results.sarif
           category: semgrep
@@ -160,9 +186,22 @@ jobs:
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
       
+      - name: Verify Trivy Output File
+        id: verify_trivy_output
+        if: always()
+        run: |
+          if [ -f "trivy-results.sarif" ]; then
+            echo "Trivy SARIF file found."
+            ls -lh trivy-results.sarif
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Trivy SARIF file NOT found."
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Upload Trivy SARIF for aggregation
         uses: actions/upload-artifact@v4
-        if: always()
+        if: steps.verify_trivy_output.outputs.exists == 'true' # Modified condition
         with:
           name: trivy-sarif
           path: trivy-results.sarif
@@ -170,7 +209,7 @@ jobs:
 
       - name: Upload Trivy scan results
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: steps.verify_trivy_output.outputs.exists == 'true' # Modified condition
         with:
           sarif_file: trivy-results.sarif
           category: trivy
