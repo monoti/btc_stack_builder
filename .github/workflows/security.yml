@@ -69,9 +69,30 @@ jobs:
             -o bandit-results.sarif \
             --exit-zero
       
+      - name: Verify Bandit Output File
+        id: verify_bandit_output
+        if: always()
+        run: |
+          if [ -f "bandit-results.sarif" ]; then
+            echo "Bandit SARIF file found."
+            ls -lh bandit-results.sarif
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Bandit SARIF file NOT found."
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload Bandit SARIF
+        uses: actions/upload-artifact@v4
+        if: steps.verify_bandit_output.outputs.exists == 'true' # Modified condition
+        with:
+          name: bandit-sarif
+          path: bandit-results.sarif
+          retention-days: 7
+
       - name: Upload Bandit results
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: steps.verify_bandit_output.outputs.exists == 'true' # Modified condition
         with:
           sarif_file: bandit-results.sarif
           category: bandit
@@ -79,9 +100,30 @@ jobs:
       - name: Run Semgrep
         run: semgrep ci --sarif --output semgrep-results.sarif --config "p/python"
 
+      - name: Verify Semgrep Output File
+        id: verify_semgrep_output
+        if: always()
+        run: |
+          if [ -f "semgrep-results.sarif" ]; then
+            echo "Semgrep SARIF file found."
+            ls -lh semgrep-results.sarif
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Semgrep SARIF file NOT found."
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload Semgrep SARIF
+        uses: actions/upload-artifact@v4
+        if: steps.verify_semgrep_output.outputs.exists == 'true' # Modified condition
+        with:
+          name: semgrep-sarif
+          path: semgrep-results.sarif
+          retention-days: 7
+
       - name: Upload Semgrep results
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: steps.verify_semgrep_output.outputs.exists == 'true' # Modified condition
         with:
           sarif_file: semgrep-results.sarif
           category: semgrep
@@ -144,9 +186,30 @@ jobs:
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
       
+      - name: Verify Trivy Output File
+        id: verify_trivy_output
+        if: always()
+        run: |
+          if [ -f "trivy-results.sarif" ]; then
+            echo "Trivy SARIF file found."
+            ls -lh trivy-results.sarif
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Trivy SARIF file NOT found."
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload Trivy SARIF for aggregation
+        uses: actions/upload-artifact@v4
+        if: steps.verify_trivy_output.outputs.exists == 'true' # Modified condition
+        with:
+          name: trivy-sarif
+          path: trivy-results.sarif
+          retention-days: 7
+
       - name: Upload Trivy scan results
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: steps.verify_trivy_output.outputs.exists == 'true' # Modified condition
         with:
           sarif_file: trivy-results.sarif
           category: trivy
@@ -160,9 +223,32 @@ jobs:
           exit-code: '1' # Fail if issues found
           exit-level: 'WARN' # Exit on warnings or higher
       
+      - name: Verify Dockle Output File
+        id: verify_dockle_output # Added id here
+        if: always() # Run this verification regardless of Dockle's outcome
+        run: |
+          if [ -f "dockle-results.sarif" ]; then
+            echo "Dockle SARIF file found."
+            ls -lh dockle-results.sarif
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Dockle SARIF file NOT found."
+            echo "exists=false" >> $GITHUB_OUTPUT
+            # Consider if this script should exit 1 if file not found
+            # For now, it allows workflow to proceed and upload steps to be skipped based on output
+          fi
+
+      - name: Upload Dockle SARIF for aggregation
+        uses: actions/upload-artifact@v4
+        if: steps.verify_dockle_output.outputs.exists == 'true' # Modified condition
+        with:
+          name: dockle-sarif
+          path: dockle-results.sarif
+          retention-days: 7
+
       - name: Upload Dockle scan results
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: steps.verify_dockle_output.outputs.exists == 'true' # Modified condition
         with:
           sarif_file: dockle-results.sarif
           category: dockle
@@ -176,39 +262,69 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Create report aggregation directory
+        run: mkdir all_security_reports
+
+      - name: Download Bandit SARIF
+        uses: actions/download-artifact@v4
+        with:
+          name: bandit-sarif
+          path: all_security_reports/
       
-      - name: Generate Security Report
+      - name: Download Semgrep SARIF
+        uses: actions/download-artifact@v4
+        with:
+          name: semgrep-sarif
+          path: all_security_reports/
+
+      - name: Download Trivy SARIF
+        uses: actions/download-artifact@v4
+        with:
+          name: trivy-sarif
+          path: all_security_reports/
+
+      - name: Download Dockle SARIF
+        uses: actions/download-artifact@v4
+        with:
+          name: dockle-sarif
+          path: all_security_reports/
+
+      - name: Generate Security Report Markdown
         run: |
-          echo "# Security Scan Results" > security-report.md
-          echo "## Scan completed at: $(date)" >> security-report.md
-          echo "## Repository: ${{ github.repository }}" >> security-report.md
-          echo "## Branch/Tag: ${{ github.ref }}" >> security-report.md
-          echo "## Commit: ${{ github.sha }}" >> security-report.md
+          echo "# Security Scan Results" > all_security_reports/security-report.md
+          echo "## Scan completed at: $(date)" >> all_security_reports/security-report.md
+          echo "## Repository: ${{ github.repository }}" >> all_security_reports/security-report.md
+          echo "## Branch/Tag: ${{ github.ref }}" >> all_security_reports/security-report.md
+          echo "## Commit: ${{ github.sha }}" >> all_security_reports/security-report.md
           
-          echo "### Overall Workflow Status" >> security-report.md
-          if [[ "${{ needs.codeql-analysis.result }}" == "success" && \
-                "${{ needs.sast-scanning.result }}" == "success" && \
-                "${{ needs.secret-scanning.result }}" == "success" && \
-                "${{ needs.docker-scanning.result }}" == "success" ]]; then
-            echo "- ✅ All security checks passed" >> security-report.md
+          echo "### Overall Workflow Status" >> all_security_reports/security-report.md
+          if [[ "${{ needs.codeql-analysis.result }}" == "success" &&                 "${{ needs.sast-scanning.result }}" == "success" &&                 "${{ needs.secret-scanning.result }}" == "success" &&                 "${{ needs.docker-scanning.result }}" == "success" ]]; then
+            echo "- ✅ All security checks passed" >> all_security_reports/security-report.md
           else
-            echo "- ⚠️ Some security checks failed or were skipped. Review details below." >> security-report.md
+            echo "- ⚠️ Some security checks failed or were skipped. Review details below and in the accompanying SARIF files." >> all_security_reports/security-report.md
           fi
           
-          echo "### Individual Job Status:" >> security-report.md
-          echo "- CodeQL Analysis: ${{ needs.codeql-analysis.result }}" >> security-report.md
-          echo "- SAST Scanning: ${{ needs.sast-scanning.result }}" >> security-report.md
-          echo "- Secret Scanning: ${{ needs.secret-scanning.result }}" >> security-report.md
-          echo "- Docker Image Scanning: ${{ needs.docker-scanning.result }}" >> security-report.md
+          echo "### Individual Job Status:" >> all_security_reports/security-report.md
+          echo "- CodeQL Analysis: ${{ needs.codeql-analysis.result }}" >> all_security_reports/security-report.md
+          echo "- SAST Scanning (Bandit, Semgrep): ${{ needs.sast-scanning.result }}" >> all_security_reports/security-report.md
+          echo "- Secret Scanning (Trufflehog, Gitleaks): ${{ needs.secret-scanning.result }}" >> all_security_reports/security-report.md
+          echo "- Docker Image Scanning (Trivy, Dockle): ${{ needs.docker-scanning.result }}" >> all_security_reports/security-report.md
           
-          echo "### Next Steps:" >> security-report.md
-          echo "1. Review detailed results in the GitHub Security tab for this workflow run." >> security-report.md
-          echo "2. Address any critical or high severity findings reported by the tools." >> security-report.md
-          echo "3. Update dependencies with known vulnerabilities if identified." >> security-report.md
+          echo "### Next Steps:" >> all_security_reports/security-report.md
+          echo "1. Review detailed results in the GitHub Security tab for this workflow run." >> all_security_reports/security-report.md
+          echo "2. Examine the SARIF files included in the downloadable 'security-scan-artifacts.zip' from this workflow run for comprehensive details of findings." >> all_security_reports/security-report.md
+          echo "3. Address any critical or high severity findings reported by the tools." >> all_security_reports/security-report.md
+          echo "4. Update dependencies with known vulnerabilities if identified." >> all_security_reports/security-report.md
+        # Note: The output of this script is now `all_security_reports/security-report.md`
+
+      - name: Archive all security reports
+        run: |
+          zip -r security-scan-artifacts.zip ./all_security_reports
       
-      - name: Upload Security Report
+      - name: Upload aggregated security artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: security-report
-          path: security-report.md
-          retention-days: 30
+          name: security-scan-artifacts
+          path: security-scan-artifacts.zip
+          retention-days: 30 # Keep the aggregated zip for 30 days
