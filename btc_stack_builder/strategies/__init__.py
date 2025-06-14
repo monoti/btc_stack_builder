@@ -993,7 +993,7 @@ class OptionPremiumStrategy(BaseStrategy):
         """
         # Count options by status
         status_counts = {}
-        for status in OptionStatus:
+        for status in list(OptionStatus):
             status_counts[status.value] = len([o for o in self.options if o.status == status])
 
         return {

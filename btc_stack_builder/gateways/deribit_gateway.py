@@ -1074,6 +1074,7 @@ class DeribitGateway(ExchangeGateway):
         except Exception as e:
             logger.error("Error fetching option settlement history", exc_info=True)
             await self._handle_ccxt_error(e)
+            return []
 
     async def close(self) -> None:
         """

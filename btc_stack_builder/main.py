@@ -122,7 +122,10 @@ async def initialize_portfolio() -> Portfolio:
     total_balance_usd = total_balance_btc * btc_price_usd
 
     # Create sub-portfolios
-    for sub_type in SubPortfolioType:
+    # Ensure SubPortfolioType is iterable
+    sub_portfolio_types = list(SubPortfolioType) if hasattr(SubPortfolioType, "__iter__") else []
+
+    for sub_type in sub_portfolio_types:
         allocation_percentage = getattr(allocation, sub_type.value)
         target_balance_btc = total_balance_btc * allocation_percentage
         target_balance_usd = total_balance_usd * allocation_percentage
